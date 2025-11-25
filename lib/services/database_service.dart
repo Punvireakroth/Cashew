@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/category.dart';
 import '../models/account.dart';
+import '../models/transaction.dart' as app_models;
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -440,6 +441,389 @@ class DatabaseService {
       print('Account balance updated: $accountId -> $newBalance');
     } catch (e) {
       print('Error updating account balance: $e');
+      rethrow;
+    }
+  }
+
+  // ==================== TRANSACTION CRUD OPERATIONS ====================
+
+  /// Insert a new transaction
+  Future<void> insertTransaction(app_models.Transaction transaction) async {
+    try {
+      final db = await database;
+      await db.insert(
+        'transactions',
+        transaction.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('Transaction inserted: ${transaction.title}');
+    } catch (e) {
+      print('Error inserting transaction: $e');
+      rethrow;
+    }
+  }
+
+  /// Update an existing transaction
+  Future<void> updateTransaction(app_models.Transaction transaction) async {
+    try {
+      final db = await database;
+      final count = await db.update(
+        'transactions',
+        transaction.toMap(),
+        where: 'id = ?',
+        whereArgs: [transaction.id],
+      );
+
+      if (count == 0) {
+        throw Exception('Transaction not found: ${transaction.id}');
+      }
+
+      print('Transaction updated: ${transaction.title}');
+    } catch (e) {
+      print('Error updating transaction: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a transaction by id
+  Future<void> deleteTransaction(String id) async {
+    try {
+      final db = await database;
+      final count = await db.delete(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      if (count == 0) {
+        throw Exception('Transaction not found: $id');
+      }
+
+      print('Transaction deleted: $id');
+    } catch (e) {
+      print('Error deleting transaction: $e');
+      rethrow;
+    }
+  }
+
+  /// Get all transactions with pagination
+  Future<List<app_models.Transaction>> getTransactions({
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'transactions',
+        orderBy: 'date DESC',
+        limit: limit,
+        offset: offset,
+      );
+
+      return maps.map((map) => app_models.Transaction.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting transactions: $e');
+      rethrow;
+    }
+  }
+
+  /// Get filtered transactions with search and filters
+  Future<List<app_models.Transaction>> getFilteredTransactions({
+    String? searchQuery,
+    int? startDate,
+    int? endDate,
+    List<String>? categoryIds,
+    String? accountId,
+    String? type, // 'income' or 'expense'
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final db = await database;
+
+      // Build WHERE clause dynamically
+      final List<String> whereConditions = [];
+      final List<dynamic> whereArgs = [];
+
+      // Search by title or notes
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        whereConditions.add('(title LIKE ? OR notes LIKE ?)');
+        whereArgs.add('%$searchQuery%');
+        whereArgs.add('%$searchQuery%');
+      }
+
+      // Filter by date range
+      if (startDate != null) {
+        whereConditions.add('date >= ?');
+        whereArgs.add(startDate);
+      }
+      if (endDate != null) {
+        whereConditions.add('date <= ?');
+        whereArgs.add(endDate);
+      }
+
+      // Filter by categories
+      if (categoryIds != null && categoryIds.isNotEmpty) {
+        final placeholders = List.filled(categoryIds.length, '?').join(',');
+        whereConditions.add('category_id IN ($placeholders)');
+        whereArgs.addAll(categoryIds);
+      }
+
+      // Filter by account
+      if (accountId != null) {
+        whereConditions.add('account_id = ?');
+        whereArgs.add(accountId);
+      }
+
+      // Filter by type (requires JOIN with categories)
+      String query;
+      if (type != null) {
+        // Use JOIN to filter by transaction type
+        final whereClause = whereConditions.isEmpty
+            ? 'WHERE c.type = ?'
+            : 'WHERE ${whereConditions.join(' AND ')} AND c.type = ?';
+        whereArgs.add(type);
+
+        query =
+            '''
+          SELECT t.* FROM transactions t
+          INNER JOIN categories c ON t.category_id = c.id
+          $whereClause
+          ORDER BY t.date DESC
+          ${limit != null ? 'LIMIT $limit' : ''}
+          ${offset != null ? 'OFFSET $offset' : ''}
+        ''';
+      } else {
+        final whereClause = whereConditions.isEmpty
+            ? ''
+            : 'WHERE ${whereConditions.join(' AND ')}';
+
+        query =
+            '''
+          SELECT * FROM transactions
+          $whereClause
+          ORDER BY date DESC
+          ${limit != null ? 'LIMIT $limit' : ''}
+          ${offset != null ? 'OFFSET $offset' : ''}
+        ''';
+      }
+
+      final maps = await db.rawQuery(query, whereArgs);
+      return maps.map((map) => app_models.Transaction.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting filtered transactions: $e');
+      rethrow;
+    }
+  }
+
+  /// Get a single transaction by id
+  Future<app_models.Transaction?> getTransactionById(String id) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+
+      if (maps.isEmpty) {
+        return null;
+      }
+
+      return app_models.Transaction.fromMap(maps.first);
+    } catch (e) {
+      print('Error getting transaction by id: $e');
+      rethrow;
+    }
+  }
+
+  /// Get transactions by account
+  Future<List<app_models.Transaction>> getTransactionsByAccount(
+    String accountId, {
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'transactions',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+        orderBy: 'date DESC',
+        limit: limit,
+        offset: offset,
+      );
+
+      return maps.map((map) => app_models.Transaction.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting transactions by account: $e');
+      rethrow;
+    }
+  }
+
+  /// Get transactions by category
+  Future<List<app_models.Transaction>> getTransactionsByCategory(
+    String categoryId, {
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'transactions',
+        where: 'category_id = ?',
+        whereArgs: [categoryId],
+        orderBy: 'date DESC',
+        limit: limit,
+        offset: offset,
+      );
+
+      return maps.map((map) => app_models.Transaction.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting transactions by category: $e');
+      rethrow;
+    }
+  }
+
+  /// Count total transactions (for pagination)
+  Future<int> getTransactionCount({
+    String? searchQuery,
+    int? startDate,
+    int? endDate,
+    List<String>? categoryIds,
+    String? accountId,
+    String? type,
+  }) async {
+    try {
+      final db = await database;
+
+      final List<String> whereConditions = [];
+      final List<dynamic> whereArgs = [];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        whereConditions.add('(title LIKE ? OR notes LIKE ?)');
+        whereArgs.add('%$searchQuery%');
+        whereArgs.add('%$searchQuery%');
+      }
+
+      if (startDate != null) {
+        whereConditions.add('date >= ?');
+        whereArgs.add(startDate);
+      }
+      if (endDate != null) {
+        whereConditions.add('date <= ?');
+        whereArgs.add(endDate);
+      }
+
+      if (categoryIds != null && categoryIds.isNotEmpty) {
+        final placeholders = List.filled(categoryIds.length, '?').join(',');
+        whereConditions.add('category_id IN ($placeholders)');
+        whereArgs.addAll(categoryIds);
+      }
+
+      if (accountId != null) {
+        whereConditions.add('account_id = ?');
+        whereArgs.add(accountId);
+      }
+
+      String query;
+      if (type != null) {
+        final whereClause = whereConditions.isEmpty
+            ? 'WHERE c.type = ?'
+            : 'WHERE ${whereConditions.join(' AND ')} AND c.type = ?';
+        whereArgs.add(type);
+
+        query =
+            '''
+          SELECT COUNT(*) as count FROM transactions t
+          INNER JOIN categories c ON t.category_id = c.id
+          $whereClause
+        ''';
+      } else {
+        final whereClause = whereConditions.isEmpty
+            ? ''
+            : 'WHERE ${whereConditions.join(' AND ')}';
+
+        query = 'SELECT COUNT(*) as count FROM transactions $whereClause';
+      }
+
+      final result = await db.rawQuery(query, whereArgs);
+      return Sqflite.firstIntValue(result) ?? 0;
+    } catch (e) {
+      print('Error counting transactions: $e');
+      rethrow;
+    }
+  }
+
+  /// Calculate total income for a period
+  Future<double> getTotalIncome({int? startDate, int? endDate}) async {
+    try {
+      final db = await database;
+
+      final whereConditions = <String>[];
+      final whereArgs = <dynamic>[];
+
+      if (startDate != null) {
+        whereConditions.add('t.date >= ?');
+        whereArgs.add(startDate);
+      }
+      if (endDate != null) {
+        whereConditions.add('t.date <= ?');
+        whereArgs.add(endDate);
+      }
+
+      final whereClause = whereConditions.isEmpty
+          ? "WHERE c.type = 'income'"
+          : "WHERE ${whereConditions.join(' AND ')} AND c.type = 'income'";
+
+      final query =
+          '''
+        SELECT SUM(t.amount) as total FROM transactions t
+        INNER JOIN categories c ON t.category_id = c.id
+        $whereClause
+      ''';
+
+      final result = await db.rawQuery(query, whereArgs);
+      return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      print('Error calculating total income: $e');
+      rethrow;
+    }
+  }
+
+  /// Calculate total expenses for a period
+  Future<double> getTotalExpenses({int? startDate, int? endDate}) async {
+    try {
+      final db = await database;
+
+      final whereConditions = <String>[];
+      final whereArgs = <dynamic>[];
+
+      if (startDate != null) {
+        whereConditions.add('t.date >= ?');
+        whereArgs.add(startDate);
+      }
+      if (endDate != null) {
+        whereConditions.add('t.date <= ?');
+        whereArgs.add(endDate);
+      }
+
+      final whereClause = whereConditions.isEmpty
+          ? "WHERE c.type = 'expense'"
+          : "WHERE ${whereConditions.join(' AND ')} AND c.type = 'expense'";
+
+      final query =
+          '''
+        SELECT SUM(t.amount) as total FROM transactions t
+        INNER JOIN categories c ON t.category_id = c.id
+        $whereClause
+      ''';
+
+      final result = await db.rawQuery(query, whereArgs);
+      return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      print('Error calculating total expenses: $e');
       rethrow;
     }
   }
