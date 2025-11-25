@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/category.dart';
+import '../models/account.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -283,6 +284,162 @@ class DatabaseService {
       return maps.isNotEmpty;
     } catch (e) {
       print('Error checking category existence: $e');
+      rethrow;
+    }
+  }
+
+  // ==================== ACCOUNT CRUD OPERATIONS ====================
+
+  /// Insert a new account
+  Future<void> insertAccount(Account account) async {
+    try {
+      final db = await database;
+      await db.insert(
+        'accounts',
+        account.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('Account inserted: ${account.name}');
+    } catch (e) {
+      print('Error inserting account: $e');
+      rethrow;
+    }
+  }
+
+  /// Update an existing account
+  Future<void> updateAccount(Account account) async {
+    try {
+      final db = await database;
+      final count = await db.update(
+        'accounts',
+        account.toMap(),
+        where: 'id = ?',
+        whereArgs: [account.id],
+      );
+
+      if (count == 0) {
+        throw Exception('Account not found: ${account.id}');
+      }
+
+      print('Account updated: ${account.name}');
+    } catch (e) {
+      print('Error updating account: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete an account by id
+  Future<void> deleteAccount(String id) async {
+    try {
+      final db = await database;
+      final count = await db.delete(
+        'accounts',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      if (count == 0) {
+        throw Exception('Account not found: $id');
+      }
+
+      print('Account deleted: $id');
+    } catch (e) {
+      // Check if deletion failed due to foreign key constraint
+      if (e.toString().contains('FOREIGN KEY constraint failed')) {
+        throw Exception(
+          'Cannot delete account: it has associated transactions',
+        );
+      }
+      print('Error deleting account: $e');
+      rethrow;
+    }
+  }
+
+  /// Get all accounts
+  Future<List<Account>> getAccounts() async {
+    try {
+      final db = await database;
+      final maps = await db.query('accounts', orderBy: 'created_at DESC');
+
+      return maps.map((map) => Account.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting accounts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get a single account by id
+  Future<Account?> getAccountById(String id) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'accounts',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+
+      if (maps.isEmpty) {
+        return null;
+      }
+
+      return Account.fromMap(maps.first);
+    } catch (e) {
+      print('Error getting account by id: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if an account exists by name
+  Future<bool> accountExistsByName(String name, {String? excludeId}) async {
+    try {
+      final db = await database;
+      List<Map<String, dynamic>> maps;
+
+      if (excludeId != null) {
+        // Exclude specific account when checking (useful for updates)
+        maps = await db.query(
+          'accounts',
+          where: 'LOWER(name) = LOWER(?) AND id != ?',
+          whereArgs: [name, excludeId],
+          limit: 1,
+        );
+      } else {
+        maps = await db.query(
+          'accounts',
+          where: 'LOWER(name) = LOWER(?)',
+          whereArgs: [name],
+          limit: 1,
+        );
+      }
+
+      return maps.isNotEmpty;
+    } catch (e) {
+      print('Error checking account existence: $e');
+      rethrow;
+    }
+  }
+
+  /// Update account balance
+  Future<void> updateAccountBalance(String accountId, double newBalance) async {
+    try {
+      final db = await database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final count = await db.update(
+        'accounts',
+        {'balance': newBalance, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [accountId],
+      );
+
+      if (count == 0) {
+        throw Exception('Account not found: $accountId');
+      }
+
+      print('Account balance updated: $accountId -> $newBalance');
+    } catch (e) {
+      print('Error updating account balance: $e');
       rethrow;
     }
   }
