@@ -70,19 +70,19 @@ class AccountCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Account name
                 Text(
                   account.name,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Balance
                 Text(
                   CurrencyFormatter.format(
@@ -90,20 +90,20 @@ class AccountCard extends StatelessWidget {
                     currency: account.currency,
                   ),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Transaction count
                 Text(
                   transactionCount == 1
                       ? '1 transaction'
                       : '$transactionCount transactions',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.black54,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                 ),
               ],
             ),
@@ -147,10 +147,7 @@ class AccountCardVertical extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: _getAccountColor().withOpacity(0.3),
-          width: 2,
-        ),
+        side: BorderSide(color: _getAccountColor().withOpacity(0.3), width: 2),
       ),
       child: InkWell(
         onTap: onTap,
@@ -169,7 +166,7 @@ class AccountCardVertical extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Account details
               Expanded(
                 child: Column(
@@ -178,23 +175,23 @@ class AccountCardVertical extends StatelessWidget {
                     Text(
                       account.name,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       transactionCount == 1
                           ? '1 transaction'
                           : '$transactionCount transactions',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black54,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                     ),
                   ],
                 ),
               ),
-              
+
               // Balance
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -205,16 +202,16 @@ class AccountCardVertical extends StatelessWidget {
                       currency: account.currency,
                     ),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     account.currency,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.black54,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
                   ),
                 ],
               ),

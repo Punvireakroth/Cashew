@@ -26,7 +26,11 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     });
   }
 
-  Future<void> _confirmDelete(BuildContext context, String accountId, String accountName) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    String accountId,
+    String accountName,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -49,8 +53,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     );
 
     if (confirm == true && mounted) {
-      final success = await ref.read(accountProvider.notifier).deleteAccount(accountId);
-      
+      final success = await ref
+          .read(accountProvider.notifier)
+          .deleteAccount(accountId);
+
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -95,10 +101,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       appBar: AppBar(
         title: const Text(
           'Accounts',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         backgroundColor: const Color(0xFFF5F6FA),
         elevation: 0,
@@ -144,11 +147,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 24),
               color: Theme.of(context).colorScheme.error,
-              child: const Icon(
-                Icons.delete,
-                color: Colors.white,
-                size: 32,
-              ),
+              child: const Icon(Icons.delete, color: Colors.white, size: 32),
             ),
             child: AccountCardVertical(
               account: account,
@@ -161,4 +160,3 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     );
   }
 }
-
