@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../models/transaction.dart';
+import '../../models/category.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../widgets/transaction_item.dart';
@@ -18,12 +20,17 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _monthScrollController = ScrollController();
   Timer? _debounce;
 
+  // Selected month
+  late DateTime _selectedMonth;
+  late List<DateTime> _availableMonths;
+
   // Filter state
-  DateTimeRange? _dateRange;
   List<String> _selectedCategoryIds = [];
-  String? _selectedType; // 'income', 'expense', or null (all)
+  String? _selectedType;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -31,17 +38,71 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
 
+    // Initialize with current month
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month, 1);
+
+    // Generate available months (12 months back to 1 month forward)
+    _availableMonths = _generateAvailableMonths();
+
     // Load initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(transactionProvider.notifier).loadTransactions(refresh: true);
       ref.read(categoryProvider.notifier).loadCategories();
+      _loadTransactionsForMonth();
+      _scrollToSelectedMonth();
     });
+  }
+
+  List<DateTime> _generateAvailableMonths() {
+    final now = DateTime.now();
+    final months = <DateTime>[];
+
+    // 12 months back
+    for (int i = 12; i >= 0; i--) {
+      months.add(DateTime(now.year, now.month - i, 1));
+    }
+    // 1 month forward
+    months.add(DateTime(now.year, now.month + 1, 1));
+
+    return months;
+  }
+
+  void _scrollToSelectedMonth() {
+    final index = _availableMonths.indexWhere(
+      (month) =>
+          month.year == _selectedMonth.year &&
+          month.month == _selectedMonth.month,
+    );
+    if (index != -1 && _monthScrollController.hasClients) {
+      final offset =
+          index * 100.0 - (MediaQuery.of(context).size.width / 2) + 50;
+      _monthScrollController.animateTo(
+        offset.clamp(0.0, _monthScrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _loadTransactionsForMonth() {
+    final startDate = _selectedMonth;
+    final endDate = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month + 1,
+      0,
+      23,
+      59,
+      59,
+    );
+
+    ref.read(transactionProvider.notifier).setDateRange(startDate, endDate);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    _monthScrollController.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -49,114 +110,256 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      // Load more when near bottom
       ref.read(transactionProvider.notifier).loadMoreTransactions();
     }
   }
 
   void _onSearchChanged() {
-    // Debounce search
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       final query = _searchController.text.trim();
-      ref.read(transactionProvider.notifier).setSearchQuery(
-            query.isEmpty ? null : query,
-          );
+      ref
+          .read(transactionProvider.notifier)
+          .setSearchQuery(query.isEmpty ? null : query);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final transactionState = ref.watch(transactionProvider);
-    final hasFilters = transactionState.filters.hasActiveFilters;
+    final categoryState = ref.watch(categoryProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: const Text(
+          'Transactions',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          // Filter button with badge
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: _showFilterBottomSheet,
-              ),
-              if (hasFilters)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 8,
-                      minHeight: 8,
-                    ),
-                  ),
-                ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterBottomSheet,
+          ),
+          IconButton(
+            icon: Icon(_showSearch ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                }
+              });
+            },
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search transactions...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+      ),
+      body: Column(
+        children: [
+          // Search bar (collapsible)
+          if (_showSearch)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search transactions...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
             ),
+
+          // Month Tabs
+          _buildMonthTabs(),
+
+          // Summary Section
+          _buildSummarySection(transactionState, categoryState),
+
+          // Transaction List
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _loadTransactionsForMonth();
+              },
+              child: _buildBody(transactionState, categoryState),
+            ),
           ),
-        ),
+        ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(transactionProvider.notifier)
-              .loadTransactions(refresh: true);
-        },
-        child: _buildBody(transactionState),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const TransactionFormScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const TransactionFormScreen()),
           );
           if (result == true && mounted) {
-            // Transaction was added, refresh list
-            ref.read(transactionProvider.notifier)
-                .loadTransactions(refresh: true);
+            _loadTransactionsForMonth();
           }
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildBody(TransactionState state) {
+  Widget _buildMonthTabs() {
+    return Container(
+      height: 50,
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: ListView.builder(
+        controller: _monthScrollController,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: _availableMonths.length,
+        itemBuilder: (context, index) {
+          final month = _availableMonths[index];
+          final isSelected =
+              month.year == _selectedMonth.year &&
+              month.month == _selectedMonth.month;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedMonth = month;
+              });
+              _loadTransactionsForMonth();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.transparent : Colors.transparent,
+                border: isSelected
+                    ? Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        ),
+                      )
+                    : Border(
+                        bottom: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 2,
+                        ),
+                      ),
+              ),
+              child: Text(
+                DateFormat('MMMM').format(month),
+                style: TextStyle(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey[600],
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummarySection(
+    TransactionState transactionState,
+    CategoryState categoryState,
+  ) {
+    double totalIncome = 0;
+    double totalExpense = 0;
+
+    for (final transaction in transactionState.transactions) {
+      final category = categoryState.categories
+          .where((cat) => cat.id == transaction.categoryId)
+          .firstOrNull;
+
+      if (category != null) {
+        if (category.isIncome) {
+          totalIncome += transaction.amount;
+        } else {
+          totalExpense += transaction.amount;
+        }
+      }
+    }
+
+    final balance = totalIncome - totalExpense;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        border: Border.all(color: Colors.grey.shade400, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          // Expense
+          _buildSummaryItem(
+            icon: Icons.arrow_drop_down,
+            color: Colors.red[700]!,
+            amount: totalExpense,
+            prefix: '-',
+          ),
+          // Divider
+          Container(width: 1, height: 30, color: Colors.grey[300]),
+          // Income
+          _buildSummaryItem(
+            icon: Icons.arrow_drop_up,
+            color: Colors.green,
+            amount: totalIncome,
+            prefix: '+',
+          ),
+          // Divider
+          Container(width: 1, height: 30, color: Colors.grey[300]),
+          // Balance
+          _buildSummaryItem(
+            icon: null,
+            color: balance >= 0 ? Colors.green : Colors.red[700]!,
+            amount: balance.abs(),
+            prefix: balance >= 0 ? '= ' : '= -',
+            showSign: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem({
+    IconData? icon,
+    required Color color,
+    required double amount,
+    required String prefix,
+    bool showSign = true,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showSign && icon != null) Icon(icon, color: color, size: 20),
+        Text(
+          '$prefix\$${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(TransactionState state, CategoryState categoryState) {
     if (state.isLoading && state.transactions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -183,10 +386,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: () {
-                ref.read(transactionProvider.notifier)
-                    .loadTransactions(refresh: true);
-              },
+              onPressed: _loadTransactionsForMonth,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
@@ -200,37 +400,32 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         icon: Icons.receipt_long,
         message: state.filters.hasActiveFilters
             ? 'No transactions found'
-            : 'No transactions yet',
-        actionText: state.filters.hasActiveFilters ? 'Clear Filters' : 'Add Transaction',
-        onAction: state.filters.hasActiveFilters
-            ? () {
-                _searchController.clear();
-                _selectedCategoryIds.clear();
-                _dateRange = null;
-                _selectedType = null;
-                ref.read(transactionProvider.notifier).clearFilters();
-              }
-            : () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TransactionFormScreen(),
-                  ),
-                );
-                if (result == true && mounted) {
-                  ref.read(transactionProvider.notifier)
-                      .loadTransactions(refresh: true);
-                }
-              },
+            : 'No transactions for ${DateFormat('MMMM yyyy').format(_selectedMonth)}',
+        actionText: 'Add Transaction',
+        onAction: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TransactionFormScreen()),
+          );
+          if (result == true && mounted) {
+            _loadTransactionsForMonth();
+          }
+        },
       );
     }
 
+    // Group transactions by day
+    final groupedTransactions = _groupTransactionsByDay(
+      state.transactions,
+      categoryState.categories,
+    );
+
     return ListView.builder(
       controller: _scrollController,
-      itemCount: state.transactions.length + (state.hasMore ? 1 : 0),
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: groupedTransactions.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == state.transactions.length) {
-          // Loading indicator at bottom
+        if (index == groupedTransactions.length) {
           return state.isLoadingMore
               ? const Padding(
                   padding: EdgeInsets.all(16.0),
@@ -239,26 +434,129 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               : const SizedBox.shrink();
         }
 
-        final transaction = state.transactions[index];
-        return TransactionItem(
-          transaction: transaction,
-          onTap: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TransactionFormScreen(
-                  transaction: transaction,
-                ),
-              ),
-            );
-            if (result == true && mounted) {
-              ref.read(transactionProvider.notifier)
-                  .loadTransactions(refresh: true);
-            }
-          },
-        );
+        final group = groupedTransactions[index];
+        return _buildDaySection(group, categoryState.categories);
       },
     );
+  }
+
+  List<_DayGroup> _groupTransactionsByDay(
+    List<Transaction> transactions,
+    List<Category> categories,
+  ) {
+    final Map<String, _DayGroup> groups = {};
+
+    for (final transaction in transactions) {
+      final date = DateTime.fromMillisecondsSinceEpoch(transaction.date);
+      final dayKey = DateFormat('yyyy-MM-dd').format(date);
+
+      if (!groups.containsKey(dayKey)) {
+        groups[dayKey] = _DayGroup(date: date, transactions: []);
+      }
+      groups[dayKey]!.transactions.add(transaction);
+    }
+
+    // Sort by date descending
+    final sortedGroups = groups.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    // Calculate totals for each group
+    for (final group in sortedGroups) {
+      double dayTotal = 0;
+      for (final transaction in group.transactions) {
+        final category = categories
+            .where((cat) => cat.id == transaction.categoryId)
+            .firstOrNull;
+
+        if (category != null) {
+          if (category.isIncome) {
+            dayTotal += transaction.amount;
+          } else {
+            dayTotal -= transaction.amount;
+          }
+        }
+      }
+      group.total = dayTotal;
+    }
+
+    return sortedGroups;
+  }
+
+  Widget _buildDaySection(_DayGroup group, List<Category> categories) {
+    final isToday = _isToday(group.date);
+    final isYesterday = _isYesterday(group.date);
+
+    String dateLabel;
+    if (isToday) {
+      dateLabel = 'Today';
+    } else if (isYesterday) {
+      dateLabel = 'Yesterday';
+    } else {
+      dateLabel = DateFormat('EEEE, MMMM d').format(group.date);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Day Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                dateLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Text(
+                '${group.total >= 0 ? '' : '-'}\$${group.total.abs().toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: group.total >= 0 ? Colors.green : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Transactions for this day
+        ...group.transactions.map((transaction) {
+          return TransactionItem(
+            transaction: transaction,
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      TransactionFormScreen(transaction: transaction),
+                ),
+              );
+              if (result == true && mounted) {
+                _loadTransactionsForMonth();
+              }
+            },
+          );
+        }),
+      ],
+    );
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  bool _isYesterday(DateTime date) {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    return date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day;
   }
 
   void _showFilterBottomSheet() {
@@ -266,49 +564,47 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       context: context,
       isScrollControlled: true,
       builder: (context) => _FilterBottomSheet(
-        dateRange: _dateRange,
         selectedCategoryIds: _selectedCategoryIds,
         selectedType: _selectedType,
-        onApply: (dateRange, categoryIds, type) {
+        onApply: (categoryIds, type) {
           setState(() {
-            _dateRange = dateRange;
             _selectedCategoryIds = categoryIds ?? [];
             _selectedType = type;
           });
 
-          // Apply filters
-          ref.read(transactionProvider.notifier).setDateRange(
-                dateRange?.start,
-                dateRange?.end,
-              );
-          ref.read(transactionProvider.notifier)
-              .setCategoryFilter(categoryIds);
+          ref.read(transactionProvider.notifier).setCategoryFilter(categoryIds);
           ref.read(transactionProvider.notifier).setTypeFilter(type);
         },
         onReset: () {
           setState(() {
-            _dateRange = null;
             _selectedCategoryIds.clear();
             _selectedType = null;
           });
 
-          // Clear filters
-          ref.read(transactionProvider.notifier).clearFilters();
+          ref.read(transactionProvider.notifier).setCategoryFilter(null);
+          ref.read(transactionProvider.notifier).setTypeFilter(null);
         },
       ),
     );
   }
 }
 
+/// Helper class to group transactions by day
+class _DayGroup {
+  final DateTime date;
+  final List<Transaction> transactions;
+  double total = 0;
+
+  _DayGroup({required this.date, required this.transactions});
+}
+
 class _FilterBottomSheet extends ConsumerStatefulWidget {
-  final DateTimeRange? dateRange;
   final List<String> selectedCategoryIds;
   final String? selectedType;
-  final Function(DateTimeRange?, List<String>?, String?) onApply;
+  final Function(List<String>?, String?) onApply;
   final VoidCallback onReset;
 
   const _FilterBottomSheet({
-    required this.dateRange,
     required this.selectedCategoryIds,
     required this.selectedType,
     required this.onApply,
@@ -320,14 +616,12 @@ class _FilterBottomSheet extends ConsumerStatefulWidget {
 }
 
 class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
-  late DateTimeRange? _dateRange;
   late List<String> _selectedCategoryIds;
   late String? _selectedType;
 
   @override
   void initState() {
     super.initState();
-    _dateRange = widget.dateRange;
     _selectedCategoryIds = List.from(widget.selectedCategoryIds);
     _selectedType = widget.selectedType;
   }
@@ -337,8 +631,8 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     final categoryState = ref.watch(categoryProvider);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
       builder: (context, scrollController) {
@@ -357,10 +651,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                 children: [
                   const Text(
                     'Filter Transactions',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   TextButton(
@@ -380,62 +671,10 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                 controller: scrollController,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // Date Range Filter
-                  const Text(
-                    'Date Range',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      FilterChip(
-                        label: const Text('This Month'),
-                        selected: _isThisMonth(),
-                        onSelected: (_) => _selectThisMonth(),
-                      ),
-                      FilterChip(
-                        label: const Text('Last Month'),
-                        selected: _isLastMonth(),
-                        onSelected: (_) => _selectLastMonth(),
-                      ),
-                      FilterChip(
-                        label: const Text('Custom'),
-                        selected: _dateRange != null &&
-                            !_isThisMonth() &&
-                            !_isLastMonth(),
-                        onSelected: (_) => _selectCustomDateRange(),
-                      ),
-                      if (_dateRange != null)
-                        ActionChip(
-                          label: const Text('Clear'),
-                          onPressed: () {
-                            setState(() {
-                              _dateRange = null;
-                            });
-                          },
-                        ),
-                    ],
-                  ),
-                  if (_dateRange != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${DateFormat('MMM d, yyyy').format(_dateRange!.start)} - ${DateFormat('MMM d, yyyy').format(_dateRange!.end)}',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-
                   // Transaction Type Filter
                   const Text(
                     'Transaction Type',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -445,27 +684,21 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                         label: const Text('All'),
                         selected: _selectedType == null,
                         onSelected: (_) {
-                          setState(() {
-                            _selectedType = null;
-                          });
+                          setState(() => _selectedType = null);
                         },
                       ),
                       ChoiceChip(
                         label: const Text('Income'),
                         selected: _selectedType == 'income',
                         onSelected: (_) {
-                          setState(() {
-                            _selectedType = 'income';
-                          });
+                          setState(() => _selectedType = 'income');
                         },
                       ),
                       ChoiceChip(
                         label: const Text('Expense'),
                         selected: _selectedType == 'expense',
                         onSelected: (_) {
-                          setState(() {
-                            _selectedType = 'expense';
-                          });
+                          setState(() => _selectedType = 'expense');
                         },
                       ),
                     ],
@@ -475,10 +708,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                   // Category Filter
                   const Text(
                     'Categories',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   if (categoryState.categories.isEmpty)
@@ -491,7 +721,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                       spacing: 8,
                       runSpacing: 8,
                       children: categoryState.categories.map((category) {
-                        final isSelected = _selectedCategoryIds.contains(category.id);
+                        final isSelected = _selectedCategoryIds.contains(
+                          category.id,
+                        );
                         return FilterChip(
                           label: Text(category.name),
                           avatar: Icon(
@@ -524,7 +756,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
               child: FilledButton(
                 onPressed: () {
                   widget.onApply(
-                    _dateRange,
                     _selectedCategoryIds.isEmpty ? null : _selectedCategoryIds,
                     _selectedType,
                   );
@@ -540,58 +771,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
         );
       },
     );
-  }
-
-  bool _isThisMonth() {
-    if (_dateRange == null) return false;
-    final now = DateTime.now();
-    final thisMonthStart = DateTime(now.year, now.month, 1);
-    final thisMonthEnd = DateTime(now.year, now.month + 1, 0);
-    return _dateRange!.start.isAtSameMomentAs(thisMonthStart) &&
-        _dateRange!.end.isAtSameMomentAs(thisMonthEnd);
-  }
-
-  bool _isLastMonth() {
-    if (_dateRange == null) return false;
-    final now = DateTime.now();
-    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = DateTime(now.year, now.month, 0);
-    return _dateRange!.start.isAtSameMomentAs(lastMonthStart) &&
-        _dateRange!.end.isAtSameMomentAs(lastMonthEnd);
-  }
-
-  void _selectThisMonth() {
-    final now = DateTime.now();
-    setState(() {
-      _dateRange = DateTimeRange(
-        start: DateTime(now.year, now.month, 1),
-        end: DateTime(now.year, now.month + 1, 0),
-      );
-    });
-  }
-
-  void _selectLastMonth() {
-    final now = DateTime.now();
-    setState(() {
-      _dateRange = DateTimeRange(
-        start: DateTime(now.year, now.month - 1, 1),
-        end: DateTime(now.year, now.month, 0),
-      );
-    });
-  }
-
-  Future<void> _selectCustomDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: _dateRange,
-    );
-    if (picked != null) {
-      setState(() {
-        _dateRange = picked;
-      });
-    }
   }
 
   IconData _getIconData(String iconName) {
@@ -621,4 +800,3 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     return iconMap[iconName] ?? Icons.category;
   }
 }
-

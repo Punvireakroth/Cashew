@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../providers/category_provider.dart';
@@ -10,9 +9,14 @@ import '../providers/transaction_provider.dart';
 class TransactionItem extends ConsumerWidget {
   final Transaction transaction;
   final VoidCallback? onTap;
+  final bool showDate;
 
-  const TransactionItem({Key? key, required this.transaction, this.onTap})
-    : super(key: key);
+  const TransactionItem({
+    Key? key,
+    required this.transaction,
+    this.onTap,
+    this.showDate = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +31,7 @@ class TransactionItem extends ConsumerWidget {
 
     final isIncome = category.isIncome;
     final amountColor = isIncome ? Colors.green : Colors.red[700];
-    final date = DateTime.fromMillisecondsSinceEpoch(transaction.date);
+    final hasNotes = transaction.notes != null && transaction.notes!.isNotEmpty;
 
     return Slidable(
       key: ValueKey(transaction.id),
@@ -44,50 +48,66 @@ class TransactionItem extends ConsumerWidget {
           ),
         ],
       ),
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: Color(category.color).withValues(alpha: 0.2),
-          child: Icon(
-            _getIconData(category.iconName),
-            color: Color(category.color),
-            size: 24,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Category Icon
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: Color(category.color).withValues(alpha: 0.15),
+                child: Icon(
+                  _getIconData(category.iconName),
+                  color: Color(category.color),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Title
+              Expanded(
+                child: Text(
+                  transaction.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Notes indicator
+              if (hasNotes) ...[
+                Icon(
+                  Icons.sticky_note_2_outlined,
+                  size: 18,
+                  color: Colors.grey[500],
+                ),
+                const SizedBox(width: 8),
+              ],
+              // Amount
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isIncome ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                    color: amountColor,
+                    size: 20,
+                  ),
+                  Text(
+                    '\$${transaction.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: amountColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        title: Text(
-          transaction.title,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              category.name,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              DateFormat('MMM d, yyyy').format(date),
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: amountColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }
@@ -145,7 +165,6 @@ class TransactionItem extends ConsumerWidget {
   }
 
   IconData _getIconData(String iconName) {
-    // Map icon names to Material Icons
     final iconMap = {
       'restaurant': Icons.restaurant,
       'shopping_cart': Icons.shopping_cart,
@@ -177,6 +196,10 @@ class TransactionItem extends ConsumerWidget {
       'local_bar': Icons.local_bar,
       'fastfood': Icons.fastfood,
       'local_pizza': Icons.local_pizza,
+      'wifi': Icons.wifi,
+      'egg': Icons.egg_alt,
+      'train': Icons.train,
+      'balance': Icons.account_balance_wallet,
     };
 
     return iconMap[iconName] ?? Icons.category;
