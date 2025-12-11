@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import 'services/database_service.dart';
 import 'services/seeding_service.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/accounts/account_form_screen.dart';
 import 'screens/accounts/account_details_screen.dart';
 import 'screens/transactions/transactions_screen.dart';
+import 'screens/budgets/budgets_screen.dart';
+import 'screens/budgets/budget_form_screen.dart';
 import 'providers/account_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/budget_provider.dart';
 import 'widgets/transaction_item.dart';
 import 'utils/currency_formatter.dart';
 
@@ -241,6 +245,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(accountProvider.notifier).loadAccounts();
       ref.read(categoryProvider.notifier).loadCategories();
       ref.read(transactionProvider.notifier).loadTransactions(refresh: true);
+      ref.read(budgetProvider.notifier).loadBudgets();
     });
   }
 
@@ -496,94 +501,265 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // 3. Budget Section
   Widget _buildBudgetSection() {
-    // Mock budget data for now (will be replaced in Phase 5)
-    // TODO: Replace with real budget data in Phase 5
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8EBFA),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final budgetState = ref.watch(budgetProvider);
+    final activeBudgets = budgetState.activeBudgets;
+
+    // If no active budgets, show create budget prompt
+    if (activeBudgets.isEmpty) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BudgetFormScreen()),
+          ).then((_) => ref.read(budgetProvider.notifier).loadBudgets());
+        },
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFCCD5AE).withOpacity(0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFCCD5AE)),
+          ),
+          child: Row(
             children: [
-              const Text(
-                'Saving',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: const Color(0xFF606C38).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.history,
-                  size: 20,
-                  color: Colors.black54,
+                  Icons.pie_chart_outline,
+                  color: Color(0xFF606C38),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            '\$100 left of \$100',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Text(
-                'Yesterday',
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 0.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6B7FD7),
-                        borderRadius: BorderRadius.circular(2),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Set up a budget',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
                       ),
                     ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Track your spending habits',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.add_circle_outline, color: Color(0xFF606C38)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show first active budget
+    final budgetData = activeBudgets.first;
+    final budget = budgetData.budget;
+    final startDate = DateTime.fromMillisecondsSinceEpoch(budget.startDate);
+    final endDate = DateTime.fromMillisecondsSinceEpoch(budget.endDate);
+    final now = DateTime.now();
+
+    // Calculate timeline progress
+    final totalDays = endDate.difference(startDate).inDays;
+    final daysPassed = now.difference(startDate).inDays;
+    final timelineProgress = totalDays > 0
+        ? (daysPassed / totalDays).clamp(0.0, 1.0)
+        : 0.0;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BudgetFormScreen(budget: budget),
+          ),
+        ).then((_) => ref.read(budgetProvider.notifier).loadBudgets());
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFFCCD5AE),
+              const Color(0xFFCCD5AE).withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  budget.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF606C38).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.history,
+                    size: 20,
+                    color: Color(0xFF606C38),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: CurrencyFormatter.format(budgetData.remaining),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        ' left of ${CurrencyFormatter.format(budget.limitAmount)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Timeline with Today marker
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      DateFormat('MMM d').format(startDate),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      DateFormat('MMM d').format(endDate),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+                // Today marker
+                Positioned(
+                  left:
+                      50 +
+                      (MediaQuery.of(context).size.width - 130) *
+                          timelineProgress -
+                      20,
+                  top: -20,
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF606C38),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Today',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 2,
+                        height: 20,
+                        color: const Color(0xFF606C38),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                _getBudgetStatusText(budgetData),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: budgetData.isOverBudget
+                      ? Colors.red.shade700
+                      : Colors.black54,
+                ),
+              ),
+            ),
+            // Show indicator if there are more budgets
+            if (activeBudgets.length > 1) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  '+${activeBudgets.length - 1} more budget${activeBudgets.length > 2 ? 's' : ''}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF606C38),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              const Text(
-                'Dec 23',
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
             ],
-          ),
-          const SizedBox(height: 8),
-          const Center(
-            child: Text(
-              'You can spend \$3.45/day for 29 more days',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _getBudgetStatusText(BudgetWithSpent budgetData) {
+    if (budgetData.isOverBudget) {
+      return 'Over budget by ${CurrencyFormatter.format(budgetData.spent - budgetData.budget.limitAmount)}';
+    }
+    if (budgetData.daysRemaining == 0) {
+      return 'Budget period ended';
+    }
+    return 'You can spend ${CurrencyFormatter.format(budgetData.dailyAllowance)}/day for ${budgetData.daysRemaining} more days';
   }
 
   // 4. Spending Graph
@@ -813,49 +989,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: const Text('See all transactions'),
           ),
       ],
-    );
-  }
-}
-
-// Placeholder screens for Budgets and More
-class BudgetsScreen extends StatelessWidget {
-  const BudgetsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-      appBar: AppBar(
-        title: const Text('Budgets'),
-        backgroundColor: const Color(0xFFF5F6FA),
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.pie_chart_outline,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Budgets',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Coming in Phase 5',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

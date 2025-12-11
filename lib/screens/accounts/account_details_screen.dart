@@ -61,8 +61,6 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
             const SizedBox(height: 16),
             _buildSummaryCard(summary),
             const SizedBox(height: 16),
-            _buildChartCard(accountTransactions, categoryState),
-            const SizedBox(height: 16),
             _buildCategoryTabs(accountTransactions, categoryState),
             const SizedBox(height: 80),
           ],
@@ -258,116 +256,6 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildChartCard(
-    List<tx.Transaction> transactions,
-    CategoryState categoryState,
-  ) {
-    final chartData = _generateChartData(transactions, categoryState);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: SizedBox(
-        height: 200,
-        child: chartData.isEmpty
-            ? const Center(
-                child: Text(
-                  'No data to display',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              )
-            : LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: _calculateInterval(chartData),
-                    getDrawingHorizontalLine: (value) => FlLine(
-                      color: Colors.grey.shade200,
-                      strokeWidth: 1,
-                      dashArray: [5, 5],
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 50,
-                        getTitlesWidget: (value, meta) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Text(
-                            '\$${value.toInt()}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        getTitlesWidget: (value, meta) {
-                          final labels = _getMonthLabels(transactions);
-                          final index = value.toInt();
-                          if (index >= 0 && index < labels.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                labels[index],
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox();
-                        },
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: chartData,
-                      isCurved: true,
-                      color: const Color(0xFF6B7B3D),
-                      barWidth: 2,
-                      isStrokeCapRound: true,
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: const Color(0xFF6B7B3D).withOpacity(0.1),
-                      ),
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) =>
-                            FlDotCirclePainter(
-                              radius: 4,
-                              color: const Color(0xFF6B7B3D),
-                              strokeWidth: 0,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-      ),
     );
   }
 

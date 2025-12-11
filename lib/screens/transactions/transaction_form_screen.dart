@@ -441,35 +441,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
             ),
           );
         }),
-        GestureDetector(
-          onTap: () => _navigateToAddAccount(),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: const Icon(Icons.add, size: 20, color: Colors.grey),
-          ),
-        ),
       ],
     );
-  }
-
-  Future<void> _navigateToAddAccount() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const AccountFormScreen()));
-    // Reload accounts after returning from account form
-    if (mounted) {
-      ref.read(accountProvider.notifier).loadAccounts();
-      // If no account was selected and accounts exist now, select the first one
-      final accounts = ref.read(accountProvider).accounts;
-      if (_selectedAccountId == null && accounts.isNotEmpty) {
-        setState(() => _selectedAccountId = accounts.first.id);
-      }
-    }
   }
 
   Widget _buildTitleField(ThemeData theme) {

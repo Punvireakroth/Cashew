@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/category.dart';
 import '../models/account.dart';
+import '../models/budget.dart';
 import '../models/transaction.dart' as app_models;
 
 class DatabaseService {
@@ -824,6 +825,170 @@ class DatabaseService {
       return (result.first['total'] as num?)?.toDouble() ?? 0.0;
     } catch (e) {
       print('Error calculating total expenses: $e');
+      rethrow;
+    }
+  }
+
+  // ==================== BUDGET CRUD OPERATIONS ====================
+
+  /// Insert a new budget
+  Future<void> insertBudget(Budget budget) async {
+    try {
+      final db = await database;
+      await db.insert(
+        'budgets',
+        budget.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('Budget inserted: ${budget.name}');
+    } catch (e) {
+      print('Error inserting budget: $e');
+      rethrow;
+    }
+  }
+
+  /// Update an existing budget
+  Future<void> updateBudget(Budget budget) async {
+    try {
+      final db = await database;
+      final count = await db.update(
+        'budgets',
+        budget.toMap(),
+        where: 'id = ?',
+        whereArgs: [budget.id],
+      );
+
+      if (count == 0) {
+        throw Exception('Budget not found: ${budget.id}');
+      }
+
+      print('Budget updated: ${budget.name}');
+    } catch (e) {
+      print('Error updating budget: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a budget by id
+  Future<void> deleteBudget(String id) async {
+    try {
+      final db = await database;
+      final count = await db.delete(
+        'budgets',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      if (count == 0) {
+        throw Exception('Budget not found: $id');
+      }
+
+      print('Budget deleted: $id');
+    } catch (e) {
+      print('Error deleting budget: $e');
+      rethrow;
+    }
+  }
+
+  /// Get all budgets
+  Future<List<Budget>> getBudgets() async {
+    try {
+      final db = await database;
+      final maps = await db.query('budgets', orderBy: 'start_date DESC');
+
+      return maps.map((map) => Budget.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting budgets: $e');
+      rethrow;
+    }
+  }
+
+  /// Get a single budget by id
+  Future<Budget?> getBudgetById(String id) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'budgets',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+
+      if (maps.isEmpty) {
+        return null;
+      }
+
+      return Budget.fromMap(maps.first);
+    } catch (e) {
+      print('Error getting budget by id: $e');
+      rethrow;
+    }
+  }
+
+  /// Get active budgets (current date falls within budget period)
+  Future<List<Budget>> getActiveBudgets() async {
+    try {
+      final db = await database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final maps = await db.query(
+        'budgets',
+        where: 'start_date <= ? AND end_date >= ?',
+        whereArgs: [now, now],
+        orderBy: 'start_date DESC',
+      );
+
+      return maps.map((map) => Budget.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting active budgets: $e');
+      rethrow;
+    }
+  }
+
+  /// Get total expenses within a budget period (for budget tracking)
+  Future<double> getBudgetSpent(int startDate, int endDate) async {
+    try {
+      final db = await database;
+
+      final query = '''
+        SELECT SUM(t.amount) as total FROM transactions t
+        INNER JOIN categories c ON t.category_id = c.id
+        WHERE t.date >= ? AND t.date <= ? AND c.type = 'expense'
+      ''';
+
+      final result = await db.rawQuery(query, [startDate, endDate]);
+      return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+    } catch (e) {
+      print('Error calculating budget spent: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if a budget with the same name exists
+  Future<bool> budgetExistsByName(String name, {String? excludeId}) async {
+    try {
+      final db = await database;
+      List<Map<String, dynamic>> maps;
+
+      if (excludeId != null) {
+        maps = await db.query(
+          'budgets',
+          where: 'LOWER(name) = LOWER(?) AND id != ?',
+          whereArgs: [name, excludeId],
+          limit: 1,
+        );
+      } else {
+        maps = await db.query(
+          'budgets',
+          where: 'LOWER(name) = LOWER(?)',
+          whereArgs: [name],
+          limit: 1,
+        );
+      }
+
+      return maps.isNotEmpty;
+    } catch (e) {
+      print('Error checking budget existence: $e');
       rethrow;
     }
   }
