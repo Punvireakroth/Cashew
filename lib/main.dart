@@ -5,7 +5,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'services/database_service.dart';
 import 'services/seeding_service.dart';
 import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/accounts/accounts_screen.dart';
+import 'screens/accounts/account_form_screen.dart';
+import 'screens/accounts/account_details_screen.dart';
 import 'screens/transactions/transactions_screen.dart';
 import 'providers/account_provider.dart';
 import 'providers/category_provider.dart';
@@ -133,7 +134,6 @@ class MyApp extends StatelessWidget {
       home: showOnboarding ? const OnboardingScreen() : const MainNavigation(),
       routes: {
         '/home': (context) => const MainNavigation(),
-        '/accounts': (context) => const AccountsScreen(),
         '/transactions': (context) => const TransactionsScreen(),
       },
     );
@@ -346,11 +346,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: const Color(0xFFE8EBFA),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Center(
-          child: Text(
-            'No accounts yet',
-            style: TextStyle(color: Colors.black54),
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'No accounts yet',
+              style: TextStyle(color: Colors.black54),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AccountFormScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add_circle_outline, size: 20),
+              label: const Text('Add Account'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF6B7FD7),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -359,62 +376,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       height: 140,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: accountState.accounts.length,
+        itemCount:
+            accountState.accounts.length + 1, // +1 for "Add Account" card
         itemBuilder: (context, index) {
-          final account = accountState.accounts[index];
-          return Container(
-            width: 200,
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: index % 2 == 0 ? const Color(0xFFE8EBFA) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: index % 2 != 0
-                  ? Border.all(color: Colors.grey.shade300)
-                  : null,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Last item is the "Add Account" card
+          if (index == accountState.accounts.length) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AccountFormScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                width: 120,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      account.name.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      size: 32,
+                      color: Colors.grey.shade500,
                     ),
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: index % 2 == 0
-                            ? Colors.grey.shade400
-                            : const Color(0xFF6B7FD7),
-                        shape: BoxShape.circle,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Account',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
-                const Spacer(),
-                Text(
-                  CurrencyFormatter.format(account.balance),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+              ),
+            );
+          }
+
+          final account = accountState.accounts[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AccountDetailsScreen(account: account),
+                ),
+              );
+            },
+            child: Container(
+              width: 200,
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: index % 2 == 0 ? const Color(0xFFE8EBFA) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: index % 2 != 0
+                    ? Border.all(color: Colors.grey.shade300)
+                    : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        account.name.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: index % 2 == 0
+                              ? Colors.grey.shade400
+                              : const Color(0xFF6B7FD7),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_getTransactionCount(account.id)} transactions',
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-              ],
+                  const Spacer(),
+                  Text(
+                    CurrencyFormatter.format(account.balance),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_getTransactionCount(account.id)} transactions',
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
+              ),
             ),
           );
         },
