@@ -516,21 +516,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFCCD5AE).withOpacity(0.5),
+            color: const Color(0xFFE8EBFA),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFCCD5AE)),
+            border: Border.all(color: const Color(0xFFE8EBFA)),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF606C38).withOpacity(0.1),
+                  color: const Color(0xFF6B7FD7).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.pie_chart_outline,
-                  color: Color(0xFF606C38),
+                  color: Color(0xFF6B7FD7),
                 ),
               ),
               const SizedBox(width: 16),
@@ -554,7 +554,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.add_circle_outline, color: Color(0xFF606C38)),
+              const Icon(Icons.add_circle_outline, color: Color(0xFF6B7FD7)),
             ],
           ),
         ),
@@ -589,8 +589,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFFCCD5AE),
-              const Color(0xFFCCD5AE).withOpacity(0.8),
+              const Color(0xFFE8EBFA),
+              const Color(0xFFE8EBFA).withOpacity(0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -614,13 +614,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF606C38).withOpacity(0.2),
+                    color: const Color(0xFF6B7FD7).withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.history,
                     size: 20,
-                    color: Color(0xFF606C38),
+                    color: Color(0xFF6B7FD7),
                   ),
                 ),
               ],
@@ -698,7 +698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF606C38),
+                          color: const Color(0xFF6B7FD7),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
@@ -713,7 +713,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Container(
                         width: 2,
                         height: 20,
-                        color: const Color(0xFF606C38),
+                        color: const Color(0xFF6B7FD7),
                       ),
                     ],
                   ),
@@ -740,7 +740,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   '+${activeBudgets.length - 1} more budget${activeBudgets.length > 2 ? 's' : ''}',
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF606C38),
+                    color: Color(0xFF6B7FD7),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

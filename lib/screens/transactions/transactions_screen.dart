@@ -298,8 +298,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border.all(color: Colors.grey.shade400, width: 2),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade400, width: 1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

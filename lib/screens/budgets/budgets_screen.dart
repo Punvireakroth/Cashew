@@ -70,7 +70,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(budgetProvider.notifier).loadBudgets(),
-        color: const Color(0xFF606C38),
+        color: const Color(0xFF6B7FD7),
         child: budgetState.isLoading && budgetState.budgets.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : budgetState.budgets.isEmpty
@@ -79,7 +79,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddBudget,
-        backgroundColor: const Color(0xFF606C38),
+        backgroundColor: const Color(0xFF6B7FD7),
         child: const Icon(Icons.add, size: 28),
       ),
     );
@@ -95,7 +95,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFCCD5AE).withOpacity(0.3),
+                color: const Color(0xFFE8EBFA).withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -125,7 +125,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Create Budget'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF606C38),
+                backgroundColor: const Color(0xFF6B7FD7),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -249,7 +249,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      const Icon(Icons.history, color: Color(0xFF606C38)),
+                      const Icon(Icons.history, color: Color(0xFF6B7FD7)),
                       const SizedBox(width: 12),
                       Text(
                         '${budgetData.budget.name} History',

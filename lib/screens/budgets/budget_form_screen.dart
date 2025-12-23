@@ -94,7 +94,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(
               context,
-            ).colorScheme.copyWith(primary: const Color(0xFF606C38)),
+            ).colorScheme.copyWith(primary: const Color(0xFF6B7FD7)),
           ),
           child: child!,
         );
@@ -345,7 +345,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFCCD5AE).withOpacity(0.3),
+                color: const Color(0xFFE8EBFA),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -353,21 +353,21 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
                   const Icon(
                     Icons.calendar_today,
                     size: 20,
-                    color: Color(0xFF606C38),
+                    color: Color(0xFF6B7FD7),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     '${_endDate.difference(_startDate).inDays + 1} days',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF606C38),
+                      color: Color(0xFF6B7FD7),
                     ),
                   ),
                   const Spacer(),
                   if (_limitController.text.isNotEmpty)
                     Text(
                       '${CurrencyFormatter.format(double.tryParse(_limitController.text) ?? 0 / (_endDate.difference(_startDate).inDays + 1))}/day',
-                      style: const TextStyle(color: Color(0xFF606C38)),
+                      style: const TextStyle(color: Color(0xFF6B7FD7)),
                     ),
                 ],
               ),
@@ -381,7 +381,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
               child: FilledButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF606C38),
+                  backgroundColor: const Color(0xFF6B7FD7),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -428,10 +428,10 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF606C38) : Colors.white,
+          color: isSelected ? const Color(0xFF6B7FD7) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF606C38) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFF6B7FD7) : Colors.grey.shade300,
           ),
         ),
         child: Text(
@@ -488,7 +488,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
                 const Icon(
                   Icons.calendar_today,
                   size: 16,
-                  color: Color(0xFF606C38),
+                  color: Color(0xFF6B7FD7),
                 ),
                 const SizedBox(width: 8),
                 Text(

@@ -15,9 +15,9 @@ class BudgetCard extends StatelessWidget {
     this.onHistoryTap,
   });
 
-  // Olive/khaki green colors matching the design
-  static const Color _cardColor = Color(0xFFCCD5AE);
-  static const Color _darkAccent = Color(0xFF606C38);
+  // Purple/Indigo colors matching the app theme
+  static const Color _cardColor = Color(0xFFE8EBFA);
+  static const Color _darkAccent = Color(0xFF6B7FD7);
 
   @override
   Widget build(BuildContext context) {
