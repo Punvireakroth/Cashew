@@ -8,7 +8,6 @@ import '../../models/category.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/account_provider.dart';
-import '../accounts/account_form_screen.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
   final Transaction? transaction;
@@ -46,9 +45,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
     _tabController.addListener(_onTabChanged);
     _tabController.index = _isExpense ? 0 : 1;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(categoryProvider.notifier).loadCategories();
-      ref.read(accountProvider.notifier).loadAccounts();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(categoryProvider.notifier).loadCategories();
+      await ref.read(accountProvider.notifier).loadAccounts();
 
       if (widget.transaction != null) {
         _populateForm();
@@ -455,7 +454,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
       child: TextFormField(
         controller: _titleController,
         decoration: InputDecoration(
-          hintText: 'Title',
+          hintText: 'Title (optional)',
           hintStyle: TextStyle(color: Colors.grey[500]),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
@@ -465,12 +464,6 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
           suffixIcon: Icon(Icons.text_fields, color: Colors.grey[400]),
         ),
         textCapitalization: TextCapitalization.sentences,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Please enter a title';
-          }
-          return null;
-        },
       ),
     );
   }
