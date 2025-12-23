@@ -53,6 +53,14 @@ dependencies:
   
   # Charts
   fl_chart: ^0.69.0
+  
+  # Backup & Restore
+  file_picker: ^8.0.0+1
+  permission_handler: ^11.3.0
+  google_sign_in: ^6.2.1
+  googleapis: ^13.2.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

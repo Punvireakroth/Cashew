@@ -454,7 +454,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
       child: TextFormField(
         controller: _titleController,
         decoration: InputDecoration(
-          hintText: 'Title (optional)',
+          hintText: 'Title',
           hintStyle: TextStyle(color: Colors.grey[500]),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(

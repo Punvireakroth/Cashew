@@ -43,3 +43,21 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google Services (if added later)
+**/GoogleService-Info.plist
+**/google-services.json
+
+# Android signing
+android/key.properties
+*.keystore
+*.jks
+
+# Local backup files (contain user data)
+*.cashchew_backup
+**/CashChewBackups/
+
+# Environment/secrets
+.env
+.env.*
+*.secret

@@ -129,68 +129,66 @@ class BudgetCard extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Today marker
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Progress bar background
-                      Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      // Today marker positioned based on timeline progress
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        top: -24,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final markerPosition =
-                                constraints.maxWidth * timelineProgress;
-                            return Stack(
-                              children: [
-                                Positioned(
-                                  left:
-                                      markerPosition - 24, // Center the marker
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _darkAccent,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Today',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        width: 2,
-                                        height: 28,
-                                        color: _darkAccent,
-                                      ),
-                                    ],
-                                  ),
+                  // Today marker with timeline
+                  SizedBox(
+                    height: 60,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final markerPosition =
+                            constraints.maxWidth * timelineProgress;
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Progress bar background at bottom
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                              ),
+                            ),
+                            // Today marker
+                            Positioned(
+                              left: (markerPosition - 24).clamp(0, constraints.maxWidth - 48),
+                              top: 0,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _darkAccent,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Today',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 2,
+                                    height: 28,
+                                    color: _darkAccent,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 8),
                   // Date labels and percentage
