@@ -34,7 +34,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (context) => BudgetFormScreen(budget: budgetData.budget),
+        builder: (context) => BudgetFormScreen(
+          budget: budgetData.budget,
+          existingCategoryIds: budgetData.categoryIds,
+        ),
       ),
     );
     if (result == true) {

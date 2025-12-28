@@ -49,12 +49,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: Colors.black87,
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.black87),
-                onPressed: () {},
-              ),
-            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -81,9 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const TransactionsScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
           );
         },
         child: const Icon(Icons.add, size: 28),
@@ -91,4 +83,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-

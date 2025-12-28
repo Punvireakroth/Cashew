@@ -5,6 +5,7 @@ import '../services/database_service.dart';
 /// Data class to hold budget with its spending info
 class BudgetWithSpent {
   final Budget budget;
+  final List<String> categoryIds;
   final double spent;
   final double remaining;
   final double percentage;
@@ -13,6 +14,7 @@ class BudgetWithSpent {
 
   const BudgetWithSpent({
     required this.budget,
+    required this.categoryIds,
     required this.spent,
     required this.remaining,
     required this.percentage,
@@ -73,10 +75,19 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
       final budgetsWithSpent = <BudgetWithSpent>[];
 
       for (final budget in budgets) {
-        final spent = await _db.getBudgetSpent(
-          budget.startDate,
-          budget.endDate,
-        );
+        // Get categories linked to this budget
+        final categoryIds = await _db.getBudgetCategoryIds(budget.id);
+
+        // Calculate spent amount based on linked categories and account
+        final spent = categoryIds.isEmpty
+            ? 0.0
+            : await _db.getBudgetSpent(
+                budget.startDate,
+                budget.endDate,
+                categoryIds,
+                accountId: budget.accountId,
+              );
+
         final remaining = budget.limitAmount - spent;
         final percentage = budget.limitAmount > 0
             ? (spent / budget.limitAmount) * 100
@@ -95,6 +106,7 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
         budgetsWithSpent.add(
           BudgetWithSpent(
             budget: budget,
+            categoryIds: categoryIds,
             spent: spent,
             remaining: remaining > 0 ? remaining : 0,
             percentage: percentage,
@@ -113,8 +125,8 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
     }
   }
 
-  /// Create a new budget
-  Future<bool> createBudget(Budget budget) async {
+  /// Create a new budget with linked categories
+  Future<bool> createBudget(Budget budget, List<String> categoryIds) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -128,7 +140,17 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
         return false;
       }
 
+      // Validate at least one category
+      if (categoryIds.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Please select at least one category',
+        );
+        return false;
+      }
+
       await _db.insertBudget(budget);
+      await _db.setBudgetCategories(budget.id, categoryIds);
 
       // Reload budgets to get updated list with spending info
       await loadBudgets();
@@ -142,8 +164,8 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
     }
   }
 
-  /// Update an existing budget
-  Future<bool> updateBudget(Budget budget) async {
+  /// Update an existing budget with linked categories
+  Future<bool> updateBudget(Budget budget, List<String> categoryIds) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -160,7 +182,17 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
         return false;
       }
 
+      // Validate at least one category
+      if (categoryIds.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Please select at least one category',
+        );
+        return false;
+      }
+
       await _db.updateBudget(budget);
+      await _db.setBudgetCategories(budget.id, categoryIds);
 
       // Reload budgets to get updated list
       await loadBudgets();
@@ -172,6 +204,11 @@ class BudgetNotifier extends StateNotifier<BudgetState> {
       );
       return false;
     }
+  }
+
+  /// Get category IDs for a budget
+  Future<List<String>> getBudgetCategoryIds(String budgetId) async {
+    return await _db.getBudgetCategoryIds(budgetId);
   }
 
   /// Delete a budget by id

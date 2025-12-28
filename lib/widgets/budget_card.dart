@@ -5,12 +5,16 @@ import '../utils/currency_formatter.dart';
 
 class BudgetCard extends StatelessWidget {
   final BudgetWithSpent budgetData;
+  final String? accountName; // null means "All Accounts"
+  final int categoryCount;
   final VoidCallback? onTap;
   final VoidCallback? onHistoryTap;
 
   const BudgetCard({
     super.key,
     required this.budgetData,
+    this.accountName,
+    this.categoryCount = 0,
     this.onTap,
     this.onHistoryTap,
   });
@@ -121,6 +125,9 @@ class BudgetCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // Account and categories info
+                  _buildTrackingInfo(),
                 ],
               ),
             ),
@@ -154,7 +161,10 @@ class BudgetCard extends StatelessWidget {
                             ),
                             // Today marker
                             Positioned(
-                              left: (markerPosition - 24).clamp(0, constraints.maxWidth - 48),
+                              left: (markerPosition - 24).clamp(
+                                0,
+                                constraints.maxWidth - 48,
+                              ),
                               top: 0,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -251,6 +261,73 @@ class BudgetCard extends StatelessWidget {
       return 'Budget period ended';
     }
     return 'You can spend ${CurrencyFormatter.format(budgetData.dailyAllowance)}/day for ${budgetData.daysRemaining} more days';
+  }
+
+  Widget _buildTrackingInfo() {
+    final categoriesText = budgetData.categoryIds.isEmpty
+        ? 'No categories'
+        : '${budgetData.categoryIds.length} ${budgetData.categoryIds.length == 1 ? 'category' : 'categories'}';
+    final accountText = budgetData.budget.tracksAllAccounts
+        ? 'All Accounts'
+        : (accountName ?? 'Specific Account');
+
+    return Row(
+      children: [
+        // Account chip
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: _darkAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                budgetData.budget.tracksAllAccounts
+                    ? Icons.account_balance_wallet
+                    : Icons.account_balance,
+                size: 14,
+                color: _darkAccent,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                accountText,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: _darkAccent,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Categories chip
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: _darkAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.category_outlined, size: 14, color: _darkAccent),
+              const SizedBox(width: 4),
+              Text(
+                categoriesText,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: _darkAccent,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

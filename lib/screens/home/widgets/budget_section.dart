@@ -98,7 +98,10 @@ class BudgetSection extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => BudgetFormScreen(budget: budget),
+            builder: (context) => BudgetFormScreen(
+              budget: budget,
+              existingCategoryIds: budgetData.categoryIds,
+            ),
           ),
         ).then((_) => ref.read(budgetProvider.notifier).loadBudgets());
       },
@@ -118,7 +121,7 @@ class BudgetSection extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(budget.name),
+            _buildHeader(budget.name, budgetData),
             const SizedBox(height: 12),
             _buildBalanceDisplay(budgetData),
             const SizedBox(height: 16),
@@ -154,29 +157,67 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String name) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildHeader(String name, BudgetWithSpent budgetData) {
+    final accountText = budgetData.budget.tracksAllAccounts
+        ? 'All Accounts'
+        : 'Specific Account';
+    final categoryCount = budgetData.categoryIds.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          name,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6B7FD7).withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.history,
+                size: 20,
+                color: Color(0xFF6B7FD7),
+              ),
+            ),
+          ],
         ),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF6B7FD7).withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.history,
-            size: 20,
-            color: Color(0xFF6B7FD7),
-          ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(
+              budgetData.budget.tracksAllAccounts
+                  ? Icons.account_balance_wallet
+                  : Icons.account_balance,
+              size: 12,
+              color: const Color(0xFF6B7FD7),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              accountText,
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
+            ),
+            const SizedBox(width: 12),
+            const Icon(
+              Icons.category_outlined,
+              size: 12,
+              color: Color(0xFF6B7FD7),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$categoryCount ${categoryCount == 1 ? 'category' : 'categories'}',
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
+            ),
+          ],
         ),
       ],
     );
@@ -195,7 +236,8 @@ class BudgetSection extends ConsumerWidget {
             ),
           ),
           TextSpan(
-            text: ' left of ${CurrencyFormatter.format(budgetData.budget.limitAmount)}',
+            text:
+                ' left of ${CurrencyFormatter.format(budgetData.budget.limitAmount)}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.normal,
@@ -239,7 +281,8 @@ class BudgetSection extends ConsumerWidget {
           ],
         ),
         Positioned(
-          left: 50 +
+          left:
+              50 +
               (MediaQuery.of(context).size.width - 130) * timelineProgress -
               20,
           top: -20,
@@ -278,4 +321,3 @@ class BudgetSection extends ConsumerWidget {
     return 'You can spend ${CurrencyFormatter.format(budgetData.dailyAllowance)}/day for ${budgetData.daysRemaining} more days';
   }
 }
-

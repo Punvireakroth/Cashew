@@ -4,13 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/budget.dart';
+import '../../models/category.dart';
+import '../../models/account.dart';
 import '../../providers/budget_provider.dart';
+import '../../providers/account_provider.dart';
+import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 
 class BudgetFormScreen extends ConsumerStatefulWidget {
-  final Budget? budget; // For editing
+  final Budget? budget;
+  final List<String>? existingCategoryIds;
 
-  const BudgetFormScreen({super.key, this.budget});
+  const BudgetFormScreen({super.key, this.budget, this.existingCategoryIds});
 
   @override
   ConsumerState<BudgetFormScreen> createState() => _BudgetFormScreenState();
@@ -20,10 +25,19 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _limitController = TextEditingController();
+  final _db = DatabaseService();
 
   late DateTime _startDate;
   late DateTime _endDate;
   bool _isSubmitting = false;
+
+  // Account selection: null means "All Accounts"
+  String? _selectedAccountId;
+
+  // Category selection
+  Set<String> _selectedCategoryIds = {};
+  List<Category> _availableCategories = [];
+  bool _isCategoriesLoading = true;
 
   bool get _isEditing => widget.budget != null;
 
@@ -32,18 +46,48 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
     super.initState();
 
     if (_isEditing) {
-      // Populate form with existing budget data
       _nameController.text = widget.budget!.name;
       _limitController.text = widget.budget!.limitAmount.toStringAsFixed(0);
       _startDate = DateTime.fromMillisecondsSinceEpoch(
         widget.budget!.startDate,
       );
       _endDate = DateTime.fromMillisecondsSinceEpoch(widget.budget!.endDate);
+      _selectedAccountId = widget.budget!.accountId;
+
+      // Load existing category IDs
+      if (widget.existingCategoryIds != null) {
+        _selectedCategoryIds = Set.from(widget.existingCategoryIds!);
+      }
     } else {
-      // Default to current month
       final now = DateTime.now();
       _startDate = DateTime(now.year, now.month, 1);
-      _endDate = DateTime(now.year, now.month + 1, 0); // Last day of month
+      _endDate = DateTime(now.year, now.month + 1, 0);
+    }
+
+    _loadAvailableCategories();
+  }
+
+  Future<void> _loadAvailableCategories() async {
+    setState(() => _isCategoriesLoading = true);
+
+    try {
+      final categories = await _db.getUnassignedExpenseCategories(
+        excludeBudgetId: _isEditing ? widget.budget!.id : null,
+      );
+      setState(() {
+        _availableCategories = categories;
+        _isCategoriesLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isCategoriesLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load categories: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -65,7 +109,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(
               context,
-            ).colorScheme.copyWith(primary: const Color(0xFF606C38)),
+            ).colorScheme.copyWith(primary: const Color(0xFF6B7FD7)),
           ),
           child: child!,
         );
@@ -75,7 +119,6 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
     if (picked != null) {
       setState(() {
         _startDate = picked;
-        // Ensure end date is after start date
         if (_endDate.isBefore(_startDate)) {
           _endDate = _startDate.add(const Duration(days: 30));
         }
@@ -130,8 +173,29 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
     });
   }
 
+  void _toggleCategory(String categoryId) {
+    setState(() {
+      if (_selectedCategoryIds.contains(categoryId)) {
+        _selectedCategoryIds.remove(categoryId);
+      } else {
+        _selectedCategoryIds.add(categoryId);
+      }
+    });
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Validate categories
+    if (_selectedCategoryIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one category'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -144,6 +208,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
       final budget = Budget(
         id: _isEditing ? widget.budget!.id : const Uuid().v4(),
         name: _nameController.text.trim(),
+        accountId: _selectedAccountId,
         limitAmount: limitAmount,
         startDate: _startDate.millisecondsSinceEpoch,
         endDate: _endDate.millisecondsSinceEpoch,
@@ -153,9 +218,13 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
 
       bool success;
       if (_isEditing) {
-        success = await ref.read(budgetProvider.notifier).updateBudget(budget);
+        success = await ref
+            .read(budgetProvider.notifier)
+            .updateBudget(budget, _selectedCategoryIds.toList());
       } else {
-        success = await ref.read(budgetProvider.notifier).createBudget(budget);
+        success = await ref
+            .read(budgetProvider.notifier)
+            .createBudget(budget, _selectedCategoryIds.toList());
       }
 
       if (success && mounted) {
@@ -197,6 +266,8 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accountState = ref.watch(accountProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
@@ -233,7 +304,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                hintText: 'e.g., Groceries, Entertainment',
+                hintText: 'e.g., Monthly Groceries, Entertainment',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -302,11 +373,26 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Account Selection
+            _buildSectionTitle('Track Account'),
+            const SizedBox(height: 8),
+            _buildAccountSelector(accountState.accounts),
+            const SizedBox(height: 24),
+
+            // Category Selection
+            _buildSectionTitle('Categories to Track'),
+            const SizedBox(height: 4),
+            Text(
+              'Select expense categories for this budget',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 12),
+            _buildCategorySelector(),
+            const SizedBox(height: 24),
+
             // Budget Period
             _buildSectionTitle('Budget Period'),
             const SizedBox(height: 8),
-
-            // Quick period selection
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -366,7 +452,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
                   const Spacer(),
                   if (_limitController.text.isNotEmpty)
                     Text(
-                      '${CurrencyFormatter.format(double.tryParse(_limitController.text) ?? 0 / (_endDate.difference(_startDate).inDays + 1))}/day',
+                      '${CurrencyFormatter.format((double.tryParse(_limitController.text) ?? 0) / (_endDate.difference(_startDate).inDays + 1))}/day',
                       style: const TextStyle(color: Color(0xFF6B7FD7)),
                     ),
                 ],
@@ -404,6 +490,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
                       ),
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -419,6 +506,164 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
         color: Colors.black54,
       ),
     );
+  }
+
+  Widget _buildAccountSelector(List<Account> accounts) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: _selectedAccountId,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down),
+          hint: const Text('All Accounts'),
+          items: [
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Row(
+                children: [
+                  Icon(Icons.account_balance_wallet, color: Color(0xFF6B7FD7)),
+                  SizedBox(width: 12),
+                  Text('All Accounts'),
+                ],
+              ),
+            ),
+            ...accounts.map(
+              (account) => DropdownMenuItem<String?>(
+                value: account.id,
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_balance, color: Color(0xFF6B7FD7)),
+                    const SizedBox(width: 12),
+                    Text(account.name),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() => _selectedAccountId = value);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategorySelector() {
+    if (_isCategoriesLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_availableCategories.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'All expense categories are already assigned to other budgets.',
+                style: TextStyle(color: Colors.orange.shade900),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _availableCategories.map((category) {
+        final isSelected = _selectedCategoryIds.contains(category.id);
+        return GestureDetector(
+          onTap: () => _toggleCategory(category.id),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? Color(category.color) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected
+                    ? Color(category.color)
+                    : Colors.grey.shade300,
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Color(category.color).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _getCategoryIcon(category.iconName),
+                  size: 18,
+                  color: isSelected ? Colors.white : Color(category.color),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  category.name,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+                if (isSelected) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.check, size: 16, color: Colors.white),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  IconData _getCategoryIcon(String iconName) {
+    const iconMap = {
+      'restaurant': Icons.restaurant,
+      'shopping_cart': Icons.shopping_cart,
+      'directions_car': Icons.directions_car,
+      'home': Icons.home,
+      'local_hospital': Icons.local_hospital,
+      'school': Icons.school,
+      'movie': Icons.movie,
+      'flight': Icons.flight,
+      'sports_esports': Icons.sports_esports,
+      'pets': Icons.pets,
+      'card_giftcard': Icons.card_giftcard,
+      'more_horiz': Icons.more_horiz,
+      'work': Icons.work,
+      'attach_money': Icons.attach_money,
+      'trending_up': Icons.trending_up,
+      'account_balance': Icons.account_balance,
+      'savings': Icons.savings,
+    };
+    return iconMap[iconName] ?? Icons.category;
   }
 
   Widget _buildQuickPeriodChip(String label, String period) {
@@ -521,7 +766,7 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               final success = await ref
                   .read(budgetProvider.notifier)
                   .deleteBudget(widget.budget!.id);

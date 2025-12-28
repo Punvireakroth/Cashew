@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 class Budget {
   final String id;
   final String name;
+  final String? accountId; // null = track all accounts
   final double limitAmount;
   final int startDate;
   final int endDate;
@@ -13,6 +14,7 @@ class Budget {
   const Budget({
     required this.id,
     required this.name,
+    this.accountId,
     required this.limitAmount,
     required this.startDate,
     required this.endDate,
@@ -20,11 +22,15 @@ class Budget {
     required this.updatedAt,
   });
 
+  /// Whether this budget tracks all accounts
+  bool get tracksAllAccounts => accountId == null;
+
   /// Convert Budget to Map for database storage
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
+      'account_id': accountId,
       'limit_amount': limitAmount,
       'start_date': startDate,
       'end_date': endDate,
@@ -38,6 +44,7 @@ class Budget {
     return Budget(
       id: map['id'] as String,
       name: map['name'] as String,
+      accountId: map['account_id'] as String?,
       limitAmount: (map['limit_amount'] as num).toDouble(),
       startDate: map['start_date'] as int,
       endDate: map['end_date'] as int,
@@ -47,9 +54,12 @@ class Budget {
   }
 
   /// Create a copy of Budget with updated fields
+  /// Use [clearAccountId] = true to explicitly set accountId to null
   Budget copyWith({
     String? id,
     String? name,
+    String? accountId,
+    bool clearAccountId = false,
     double? limitAmount,
     int? startDate,
     int? endDate,
@@ -59,6 +69,7 @@ class Budget {
     return Budget(
       id: id ?? this.id,
       name: name ?? this.name,
+      accountId: clearAccountId ? null : (accountId ?? this.accountId),
       limitAmount: limitAmount ?? this.limitAmount,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,

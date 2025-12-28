@@ -30,8 +30,9 @@ class DatabaseService {
 
       return await openDatabase(
         path,
-        version: 1,
+        version: 2,
         onCreate: _createDatabase,
+        onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
       );
     } catch (e) {
@@ -44,6 +45,37 @@ class DatabaseService {
   Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
     print('Foreign keys enabled');
+  }
+
+  /// Handle database upgrades
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    print('Upgrading database from version $oldVersion to $newVersion');
+
+    if (oldVersion < 2) {
+      // Migration to version 2: Add budget_categories table and account_id to budgets
+      await db.execute('''
+        ALTER TABLE budgets ADD COLUMN account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL;
+      ''');
+      print('Added account_id column to budgets table');
+
+      await db.execute('''
+        CREATE TABLE budget_categories (
+          budget_id TEXT NOT NULL,
+          category_id TEXT NOT NULL UNIQUE,
+          PRIMARY KEY (budget_id, category_id),
+          FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE,
+          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+        );
+      ''');
+      print('budget_categories table created');
+
+      await db.execute(
+        'CREATE INDEX idx_budget_categories_budget ON budget_categories(budget_id);',
+      );
+      print('Index created for budget_categories');
+    }
+
+    print('Database upgrade complete');
   }
 
   /// Create all database tables
@@ -82,6 +114,7 @@ class DatabaseService {
         CREATE TABLE budgets (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
+          account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL,
           limit_amount REAL NOT NULL,
           start_date INTEGER NOT NULL,
           end_date INTEGER NOT NULL,
@@ -90,6 +123,18 @@ class DatabaseService {
         );
       ''');
       print('budgets table created');
+
+      // Create budget_categories junction table
+      await db.execute('''
+        CREATE TABLE budget_categories (
+          budget_id TEXT NOT NULL,
+          category_id TEXT NOT NULL UNIQUE,
+          PRIMARY KEY (budget_id, category_id),
+          FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE,
+          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+        );
+      ''');
+      print('budget_categories table created');
 
       // Create transactions table
       await db.execute('''
@@ -118,6 +163,9 @@ class DatabaseService {
       );
       await db.execute(
         'CREATE INDEX idx_transactions_category ON transactions(category_id);',
+      );
+      await db.execute(
+        'CREATE INDEX idx_budget_categories_budget ON budget_categories(budget_id);',
       );
       print('Performance indexes created');
 
@@ -945,21 +993,158 @@ class DatabaseService {
     }
   }
 
-  /// Get total expenses within a budget period (for budget tracking)
-  Future<double> getBudgetSpent(int startDate, int endDate) async {
+  /// Get total expenses within a budget period for specific categories and account
+  /// [categoryIds] - list of category IDs to filter by (required)
+  /// [accountId] - optional account ID, null means all accounts
+  Future<double> getBudgetSpent(
+    int startDate,
+    int endDate,
+    List<String> categoryIds, {
+    String? accountId,
+  }) async {
     try {
-      final db = await database;
+      if (categoryIds.isEmpty) return 0.0;
 
-      final query = '''
+      final db = await database;
+      final placeholders = List.filled(categoryIds.length, '?').join(',');
+
+      final whereConditions = [
+        't.date >= ?',
+        't.date <= ?',
+        "c.type = 'expense'",
+        't.category_id IN ($placeholders)',
+      ];
+      final whereArgs = <dynamic>[startDate, endDate, ...categoryIds];
+
+      if (accountId != null) {
+        whereConditions.add('t.account_id = ?');
+        whereArgs.add(accountId);
+      }
+
+      final query =
+          '''
         SELECT SUM(t.amount) as total FROM transactions t
         INNER JOIN categories c ON t.category_id = c.id
-        WHERE t.date >= ? AND t.date <= ? AND c.type = 'expense'
+        WHERE ${whereConditions.join(' AND ')}
       ''';
 
-      final result = await db.rawQuery(query, [startDate, endDate]);
+      final result = await db.rawQuery(query, whereArgs);
       return (result.first['total'] as num?)?.toDouble() ?? 0.0;
     } catch (e) {
       print('Error calculating budget spent: $e');
+      rethrow;
+    }
+  }
+
+  // ==================== BUDGET CATEGORIES OPERATIONS ====================
+
+  /// Set categories for a budget (replaces existing)
+  Future<void> setBudgetCategories(
+    String budgetId,
+    List<String> categoryIds,
+  ) async {
+    try {
+      final db = await database;
+
+      await db.transaction((txn) async {
+        // Delete existing categories for this budget
+        await txn.delete(
+          'budget_categories',
+          where: 'budget_id = ?',
+          whereArgs: [budgetId],
+        );
+
+        // Insert new categories
+        for (final categoryId in categoryIds) {
+          await txn.insert('budget_categories', {
+            'budget_id': budgetId,
+            'category_id': categoryId,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      });
+
+      print(
+        'Budget categories set: $budgetId -> ${categoryIds.length} categories',
+      );
+    } catch (e) {
+      print('Error setting budget categories: $e');
+      rethrow;
+    }
+  }
+
+  /// Get category IDs for a budget
+  Future<List<String>> getBudgetCategoryIds(String budgetId) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'budget_categories',
+        columns: ['category_id'],
+        where: 'budget_id = ?',
+        whereArgs: [budgetId],
+      );
+
+      return maps.map((m) => m['category_id'] as String).toList();
+    } catch (e) {
+      print('Error getting budget category IDs: $e');
+      rethrow;
+    }
+  }
+
+  /// Get expense categories not assigned to any budget
+  /// [excludeBudgetId] - optionally include categories from this budget
+  Future<List<Category>> getUnassignedExpenseCategories({
+    String? excludeBudgetId,
+  }) async {
+    try {
+      final db = await database;
+
+      String query;
+      List<dynamic> args;
+
+      if (excludeBudgetId != null) {
+        // Include categories assigned to the excluded budget
+        query = '''
+          SELECT c.* FROM categories c
+          WHERE c.type = 'expense'
+            AND (c.id NOT IN (SELECT category_id FROM budget_categories)
+                 OR c.id IN (SELECT category_id FROM budget_categories WHERE budget_id = ?))
+          ORDER BY c.name ASC
+        ''';
+        args = [excludeBudgetId];
+      } else {
+        query = '''
+          SELECT c.* FROM categories c
+          WHERE c.type = 'expense'
+            AND c.id NOT IN (SELECT category_id FROM budget_categories)
+          ORDER BY c.name ASC
+        ''';
+        args = [];
+      }
+
+      final maps = await db.rawQuery(query, args);
+      return maps.map((map) => Category.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting unassigned expense categories: $e');
+      rethrow;
+    }
+  }
+
+  /// Check which budget a category is assigned to
+  Future<String?> getCategoryBudgetId(String categoryId) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'budget_categories',
+        columns: ['budget_id'],
+        where: 'category_id = ?',
+        whereArgs: [categoryId],
+        limit: 1,
+      );
+
+      if (maps.isEmpty) return null;
+      return maps.first['budget_id'] as String;
+    } catch (e) {
+      print('Error getting category budget ID: $e');
       rethrow;
     }
   }
