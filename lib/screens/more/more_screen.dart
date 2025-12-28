@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/backup_provider.dart';
+import '../../services/database_service.dart';
 
 class MoreScreen extends ConsumerStatefulWidget {
   const MoreScreen({super.key});
@@ -59,6 +61,9 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
           const SizedBox(height: 24),
           _buildSectionTitle('Support'),
           _buildSupportSection(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Developer Tools'),
+          _buildDeveloperSection(),
         ],
       ),
     );
@@ -124,6 +129,153 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildDeveloperSection() {
+    return Card(
+      color: Colors.orange.shade50,
+      child: ExpansionTile(
+        leading: const Icon(Icons.developer_mode, color: Colors.orange),
+        title: const Text('Developer Options'),
+        subtitle: const Text(
+          'Testing tools for development',
+          style: TextStyle(fontSize: 12),
+        ),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.restart_alt, color: Colors.red),
+            title: const Text('Reset to Onboarding'),
+            subtitle: const Text('Clear all data and restart app setup'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _showResetConfirmDialog(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_sweep, color: Colors.red),
+            title: const Text('Clear All Data'),
+            subtitle: const Text('Delete all transactions, accounts & budgets'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _showClearDataConfirmDialog(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset to Onboarding?'),
+        content: const Text(
+          'This will clear ALL your data including accounts, transactions, budgets, and preferences. The app will restart from the onboarding screen.\n\nThis action cannot be undone!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _resetToOnboarding();
+            },
+            child: const Text('Reset Everything'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearDataConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear All Data?'),
+        content: const Text(
+          'This will delete all transactions, accounts, and budgets. Your preferences will be kept.\n\nThis action cannot be undone!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _clearAllData();
+            },
+            child: const Text('Clear Data'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _resetToOnboarding() async {
+    try {
+      // Clear SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      await prefs.setBool('first_launch', false);
+      await prefs.setBool('show_onboarding', true);
+
+      // Clear database tables
+      final db = DatabaseService();
+      final database = await db.database;
+      await database.delete('transactions');
+      await database.delete('budgets');
+      await database.delete('accounts');
+
+      if (!mounted) return;
+
+      // Navigate to onboarding
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error resetting app: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _clearAllData() async {
+    try {
+      final db = DatabaseService();
+      final database = await db.database;
+      await database.delete('transactions');
+      await database.delete('budgets');
+      await database.delete('accounts');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All data cleared successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Refresh providers
+      ref.invalidate(backupProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 
