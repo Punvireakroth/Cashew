@@ -30,7 +30,7 @@ class DatabaseService {
 
       return await openDatabase(
         path,
-        version: 2,
+        version: 3,
         onCreate: _createDatabase,
         onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
@@ -73,6 +73,14 @@ class DatabaseService {
         'CREATE INDEX idx_budget_categories_budget ON budget_categories(budget_id);',
       );
       print('Index created for budget_categories');
+    }
+
+    if (oldVersion < 3) {
+      // Migration to version 3: Add is_archived column to budgets
+      await db.execute('''
+        ALTER TABLE budgets ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0;
+      ''');
+      print('Added is_archived column to budgets table');
     }
 
     print('Database upgrade complete');
@@ -118,6 +126,7 @@ class DatabaseService {
           limit_amount REAL NOT NULL,
           start_date INTEGER NOT NULL,
           end_date INTEGER NOT NULL,
+          is_archived INTEGER NOT NULL DEFAULT 0,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL
         );
@@ -1174,6 +1183,158 @@ class DatabaseService {
       return maps.isNotEmpty;
     } catch (e) {
       print('Error checking budget existence: $e');
+      rethrow;
+    }
+  }
+
+  /// Archive a budget
+  Future<void> archiveBudget(String id) async {
+    try {
+      final db = await database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final count = await db.update(
+        'budgets',
+        {'is_archived': 1, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      if (count == 0) {
+        throw Exception('Budget not found: $id');
+      }
+
+      print('Budget archived: $id');
+    } catch (e) {
+      print('Error archiving budget: $e');
+      rethrow;
+    }
+  }
+
+  /// Restore an archived budget
+  Future<void> restoreBudget(String id) async {
+    try {
+      final db = await database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final count = await db.update(
+        'budgets',
+        {'is_archived': 0, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      if (count == 0) {
+        throw Exception('Budget not found: $id');
+      }
+
+      print('Budget restored: $id');
+    } catch (e) {
+      print('Error restoring budget: $e');
+      rethrow;
+    }
+  }
+
+  /// Get archived budgets
+  Future<List<Budget>> getArchivedBudgets() async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'budgets',
+        where: 'is_archived = 1',
+        orderBy: 'updated_at DESC',
+      );
+
+      return maps.map((map) => Budget.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting archived budgets: $e');
+      rethrow;
+    }
+  }
+
+  /// Get non-archived budgets
+  Future<List<Budget>> getNonArchivedBudgets() async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'budgets',
+        where: 'is_archived = 0',
+        orderBy: 'start_date DESC',
+      );
+
+      return maps.map((map) => Budget.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting non-archived budgets: $e');
+      rethrow;
+    }
+  }
+
+  /// Get expired non-archived budgets (for renewal prompts)
+  Future<List<Budget>> getExpiredBudgets() async {
+    try {
+      final db = await database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final maps = await db.query(
+        'budgets',
+        where: 'is_archived = 0 AND end_date < ?',
+        whereArgs: [now],
+        orderBy: 'end_date DESC',
+      );
+
+      return maps.map((map) => Budget.fromMap(map)).toList();
+    } catch (e) {
+      print('Error getting expired budgets: $e');
+      rethrow;
+    }
+  }
+
+  /// Get the active budget for a category (if any)
+  /// Returns null if category is not linked to any active budget
+  Future<Budget?> getActiveBudgetForCategory(
+    String categoryId, {
+    String? accountId,
+  }) async {
+    try {
+      final db = await database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Get budget ID for this category
+      final budgetCategoryMaps = await db.query(
+        'budget_categories',
+        columns: ['budget_id'],
+        where: 'category_id = ?',
+        whereArgs: [categoryId],
+        limit: 1,
+      );
+
+      if (budgetCategoryMaps.isEmpty) return null;
+
+      final budgetId = budgetCategoryMaps.first['budget_id'] as String;
+
+      // Get the budget and check if it's active
+      final budgetMaps = await db.query(
+        'budgets',
+        where:
+            'id = ? AND is_archived = 0 AND start_date <= ? AND end_date >= ?',
+        whereArgs: [budgetId, now, now],
+        limit: 1,
+      );
+
+      if (budgetMaps.isEmpty) return null;
+
+      final budget = Budget.fromMap(budgetMaps.first);
+
+      // If budget is account-specific, check if it matches
+      if (budget.accountId != null &&
+          accountId != null &&
+          budget.accountId != accountId) {
+        return null;
+      }
+
+      return budget;
+    } catch (e) {
+      print('Error getting active budget for category: $e');
       rethrow;
     }
   }

@@ -285,11 +285,18 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          if (_isEditing)
+          if (_isEditing) ...[
+            IconButton(
+              icon: const Icon(Icons.archive_outlined, color: Color(0xFF6B7FD7)),
+              onPressed: _showArchiveConfirmation,
+              tooltip: 'Archive',
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: _showDeleteConfirmation,
+              tooltip: 'Delete',
             ),
+          ],
         ],
       ),
       body: Form(
@@ -747,6 +754,45 @@ class _BudgetFormScreenState extends ConsumerState<BudgetFormScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showArchiveConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Archive Budget'),
+        content: Text(
+          'Archive "${widget.budget!.name}"? You can restore it later from the Archived tab.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await ref
+                  .read(budgetProvider.notifier)
+                  .archiveBudget(widget.budget!.id);
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Budget archived'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context, true);
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF6B7FD7),
+            ),
+            child: const Text('Archive'),
+          ),
+        ],
       ),
     );
   }

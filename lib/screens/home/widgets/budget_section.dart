@@ -12,12 +12,274 @@ class BudgetSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final budgetState = ref.watch(budgetProvider);
     final activeBudgets = budgetState.activeBudgets;
+    final expiredBudgets = budgetState.expiredBudgets;
 
-    if (activeBudgets.isEmpty) {
-      return _buildCreateBudgetPrompt(context, ref);
-    }
+    return Column(
+      children: [
+        // Show expired budget banner if any
+        if (expiredBudgets.isNotEmpty)
+          _buildExpiredBudgetBanner(context, ref, expiredBudgets),
 
-    return _buildActiveBudget(context, ref, activeBudgets);
+        // Show active budget or create prompt
+        if (activeBudgets.isEmpty)
+          _buildCreateBudgetPrompt(context, ref)
+        else
+          _buildActiveBudget(context, ref, activeBudgets),
+      ],
+    );
+  }
+
+  Widget _buildExpiredBudgetBanner(
+    BuildContext context,
+    WidgetRef ref,
+    List<BudgetWithSpent> expiredBudgets,
+  ) {
+    final firstExpired = expiredBudgets.first;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.timer_off_outlined,
+              color: Colors.orange.shade700,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  expiredBudgets.length == 1
+                      ? '"${firstExpired.budget.name}" has expired'
+                      : '${expiredBudgets.length} budgets have expired',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Renew or archive to keep things tidy',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _showRenewalBottomSheet(context, ref, firstExpired),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange.shade800,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: const Text('Action'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenewalBottomSheet(
+    BuildContext context,
+    WidgetRef ref,
+    BudgetWithSpent budgetData,
+  ) {
+    final now = DateTime.now();
+    final originalDuration =
+        budgetData.budget.endDate - budgetData.budget.startDate;
+    final newStartDate = DateTime(now.year, now.month, 1);
+    final newEndDate = newStartDate.add(Duration(milliseconds: originalDuration));
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.timer_off_outlined,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '"${budgetData.budget.name}" Expired',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSummaryRow(
+                          'Spent',
+                          CurrencyFormatter.format(budgetData.spent),
+                          budgetData.isOverBudget ? Colors.red : Colors.green,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSummaryRow(
+                          'Budget',
+                          CurrencyFormatter.format(
+                            budgetData.budget.limitAmount,
+                          ),
+                          null,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSummaryRow(
+                          budgetData.isOverBudget ? 'Over by' : 'Saved',
+                          CurrencyFormatter.format(
+                            budgetData.isOverBudget
+                                ? budgetData.spent - budgetData.budget.limitAmount
+                                : budgetData.remaining,
+                          ),
+                          budgetData.isOverBudget ? Colors.red : Colors.green,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await ref
+                                .read(budgetProvider.notifier)
+                                .archiveBudget(budgetData.budget.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Budget archived'),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.archive_outlined, size: 18),
+                          label: const Text('Archive'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.orange.shade700,
+                            side: BorderSide(color: Colors.orange.shade300),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final success = await ref
+                                .read(budgetProvider.notifier)
+                                .renewBudget(
+                                  budgetData,
+                                  newStartDate:
+                                      newStartDate.millisecondsSinceEpoch,
+                                  newEndDate: newEndDate.millisecondsSinceEpoch,
+                                );
+                            if (success && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Budget renewed for new period'),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Renew'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF6B7FD7),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      'New period: ${DateFormat('MMM d').format(newStartDate)} - ${DateFormat('MMM d').format(newEndDate)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, Color? valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.black54)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: valueColor ?? Colors.black87,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildCreateBudgetPrompt(BuildContext context, WidgetRef ref) {

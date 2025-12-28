@@ -8,6 +8,7 @@ class Budget {
   final double limitAmount;
   final int startDate;
   final int endDate;
+  final bool isArchived;
   final int createdAt;
   final int updatedAt;
 
@@ -18,12 +19,22 @@ class Budget {
     required this.limitAmount,
     required this.startDate,
     required this.endDate,
+    this.isArchived = false,
     required this.createdAt,
     required this.updatedAt,
   });
 
   /// Whether this budget tracks all accounts
   bool get tracksAllAccounts => accountId == null;
+
+  /// Whether this budget period has expired
+  bool get isExpired => DateTime.now().millisecondsSinceEpoch > endDate;
+
+  /// Whether this budget is currently active (not expired, not archived)
+  bool get isActive {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return startDate <= now && endDate >= now && !isArchived;
+  }
 
   /// Convert Budget to Map for database storage
   Map<String, dynamic> toMap() {
@@ -34,6 +45,7 @@ class Budget {
       'limit_amount': limitAmount,
       'start_date': startDate,
       'end_date': endDate,
+      'is_archived': isArchived ? 1 : 0,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -48,6 +60,7 @@ class Budget {
       limitAmount: (map['limit_amount'] as num).toDouble(),
       startDate: map['start_date'] as int,
       endDate: map['end_date'] as int,
+      isArchived: (map['is_archived'] as int?) == 1,
       createdAt: map['created_at'] as int,
       updatedAt: map['updated_at'] as int,
     );
@@ -63,6 +76,7 @@ class Budget {
     double? limitAmount,
     int? startDate,
     int? endDate,
+    bool? isArchived,
     int? createdAt,
     int? updatedAt,
   }) {
@@ -73,6 +87,7 @@ class Budget {
       limitAmount: limitAmount ?? this.limitAmount,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
+      isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

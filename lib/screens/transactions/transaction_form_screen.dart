@@ -8,6 +8,8 @@ import '../../models/category.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/account_provider.dart';
+import '../../services/database_service.dart';
+import '../../utils/currency_formatter.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
   final Transaction? transaction;
@@ -655,6 +657,164 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
         date.day == yesterday.day;
   }
 
+  /// Check if this transaction would exceed any active budget
+  /// Returns true if user wants to continue, false to cancel
+  Future<bool> _checkBudgetLimit(double amount) async {
+    if (_selectedCategoryId == null || _selectedAccountId == null) return true;
+
+    try {
+      final db = DatabaseService();
+
+      // Check if category is linked to an active budget
+      final budget = await db.getActiveBudgetForCategory(
+        _selectedCategoryId!,
+        accountId: _selectedAccountId,
+      );
+
+      if (budget == null) return true;
+
+      // Get category IDs for this budget
+      final categoryIds = await db.getBudgetCategoryIds(budget.id);
+
+      // Calculate current spending
+      final spent = await db.getBudgetSpent(
+        budget.startDate,
+        budget.endDate,
+        categoryIds,
+        accountId: budget.accountId,
+      );
+
+      final remaining = budget.limitAmount - spent;
+
+      // If transaction would exceed remaining budget, show warning
+      if (amount > remaining) {
+        final overBy = amount - remaining;
+
+        final confirmed = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            icon: Icon(
+              Icons.warning_amber_rounded,
+              size: 48,
+              color: Colors.orange.shade600,
+            ),
+            title: const Text('Budget Warning'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This transaction will exceed your "${budget.name}" budget by ${CurrencyFormatter.format(overBy)}.',
+                  style: const TextStyle(fontSize: 15),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildBudgetInfoRow(
+                        'Budget Limit',
+                        CurrencyFormatter.format(budget.limitAmount),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildBudgetInfoRow(
+                        'Already Spent',
+                        CurrencyFormatter.format(spent),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildBudgetInfoRow(
+                        'Remaining',
+                        remaining > 0
+                            ? CurrencyFormatter.format(remaining)
+                            : '\$0.00',
+                        color: remaining > 0 ? Colors.green : Colors.red,
+                      ),
+                      const Divider(height: 16),
+                      _buildBudgetInfoRow(
+                        'This Transaction',
+                        CurrencyFormatter.format(amount),
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
+                ),
+                child: const Text('Continue Anyway'),
+              ),
+            ],
+          ),
+        );
+
+        return confirmed ?? false;
+      }
+
+      // Show info if transaction uses most of remaining budget (>80%)
+      if (remaining > 0 && amount > remaining * 0.8) {
+        final percentUsed = ((spent + amount) / budget.limitAmount * 100)
+            .toInt();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'This will use $percentUsed% of your "${budget.name}" budget',
+            ),
+            backgroundColor: Colors.orange.shade600,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      return true;
+    } catch (e) {
+      // If check fails, allow transaction to continue
+      print('Budget check error: $e');
+      return true;
+    }
+  }
+
+  Widget _buildBudgetInfoRow(
+    String label,
+    String value, {
+    Color? color,
+    bool isBold = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade700,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            color: color ?? Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _saveTransaction() async {
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -688,6 +848,12 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
     }
 
     if (!_formKey.currentState!.validate()) return;
+
+    // Check if this expense would exceed any budget
+    if (_isExpense) {
+      final shouldContinue = await _checkBudgetLimit(amount);
+      if (!shouldContinue) return;
+    }
 
     setState(() => _isLoading = true);
 
