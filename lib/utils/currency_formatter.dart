@@ -1,12 +1,44 @@
 import 'package:intl/intl.dart';
 
+/// Currency data with code, symbol, and display name
+class CurrencyInfo {
+  final String code;
+  final String symbol;
+  final String name;
+
+  const CurrencyInfo({
+    required this.code,
+    required this.symbol,
+    required this.name,
+  });
+}
+
 /// Utility class for currency formatting
 class CurrencyFormatter {
+  /// All supported currencies (synced with account form)
+  static const List<CurrencyInfo> supportedCurrencies = [
+    CurrencyInfo(code: 'USD', symbol: '\$', name: 'US Dollar'),
+    CurrencyInfo(code: 'EUR', symbol: '€', name: 'Euro'),
+    CurrencyInfo(code: 'GBP', symbol: '£', name: 'British Pound'),
+    CurrencyInfo(code: 'JPY', symbol: '¥', name: 'Japanese Yen'),
+    CurrencyInfo(code: 'AUD', symbol: '\$', name: 'Australian Dollar'),
+    CurrencyInfo(code: 'CAD', symbol: '\$', name: 'Canadian Dollar'),
+    CurrencyInfo(code: 'CHF', symbol: 'F', name: 'Swiss Franc'),
+    CurrencyInfo(code: 'CNY', symbol: '¥', name: 'Chinese Yuan'),
+    CurrencyInfo(code: 'SEK', symbol: 'kr', name: 'Swedish Krona'),
+    CurrencyInfo(code: 'KHR', symbol: '៛', name: 'Cambodian Riel'),
+    CurrencyInfo(code: 'THB', symbol: '฿', name: 'Thai Baht'),
+    CurrencyInfo(code: 'INR', symbol: '₹', name: 'Indian Rupee'),
+    CurrencyInfo(code: 'KRW', symbol: '₩', name: 'South Korean Won'),
+    CurrencyInfo(code: 'SGD', symbol: '\$', name: 'Singapore Dollar'),
+    CurrencyInfo(code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit'),
+  ];
+
   /// Format a number as currency with the specified currency code
   static String format(double amount, {String currency = 'USD'}) {
     final formatter = NumberFormat.currency(
       symbol: getCurrencySymbol(currency),
-      decimalDigits: 2,
+      decimalDigits: getDecimalDigits(currency),
     );
     return formatter.format(amount);
   }
@@ -20,57 +52,44 @@ class CurrencyFormatter {
     return formatter.format(amount);
   }
 
-  /// Get currency symbol for a given currency code
-  static String getCurrencySymbol(String currency) {
+  /// Get appropriate decimal digits for currency (0 for KHR, JPY, KRW)
+  static int getDecimalDigits(String currency) {
     switch (currency.toUpperCase()) {
-      case 'USD':
-        return '\$';
-      case 'EUR':
-        return '€';
-      case 'GBP':
-        return '£';
-      case 'JPY':
-        return '¥';
-      case 'CNY':
-        return '¥';
-      case 'INR':
-        return '₹';
       case 'KHR':
-        return '៛';
-      case 'THB':
-        return '฿';
+      case 'JPY':
+      case 'KRW':
+        return 0;
       default:
-        return currency;
+        return 2;
     }
   }
 
-  /// Get list of supported currencies
-  static List<String> getSupportedCurrencies() {
-    return ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'INR', 'KHR', 'THB'];
+  /// Get currency symbol for a given currency code
+  static String getCurrencySymbol(String currency) {
+    final info = supportedCurrencies
+        .where((c) => c.code.toUpperCase() == currency.toUpperCase())
+        .firstOrNull;
+    return info?.symbol ?? currency;
+  }
+
+  /// Get list of supported currency codes
+  static List<String> getSupportedCurrencyCodes() {
+    return supportedCurrencies.map((c) => c.code).toList();
   }
 
   /// Get currency display name
   static String getCurrencyName(String code) {
-    switch (code.toUpperCase()) {
-      case 'USD':
-        return 'US Dollar';
-      case 'EUR':
-        return 'Euro';
-      case 'GBP':
-        return 'British Pound';
-      case 'JPY':
-        return 'Japanese Yen';
-      case 'CNY':
-        return 'Chinese Yuan';
-      case 'INR':
-        return 'Indian Rupee';
-      case 'KHR':
-        return 'Cambodian Riel';
-      case 'THB':
-        return 'Thai Baht';
-      default:
-        return code;
-    }
+    final info = supportedCurrencies
+        .where((c) => c.code.toUpperCase() == code.toUpperCase())
+        .firstOrNull;
+    return info?.name ?? code;
+  }
+
+  /// Get CurrencyInfo by code
+  static CurrencyInfo? getCurrencyInfo(String code) {
+    return supportedCurrencies
+        .where((c) => c.code.toUpperCase() == code.toUpperCase())
+        .firstOrNull;
   }
 
   /// Parse a string to double, returns null if invalid

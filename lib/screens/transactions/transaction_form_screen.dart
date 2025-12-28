@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../services/database_service.dart';
+import '../../services/exchange_rate_service.dart';
 import '../../utils/currency_formatter.dart';
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
@@ -40,12 +42,23 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
   Transaction? _oldTransaction;
   Category? _oldCategory;
 
+  // Currency conversion state
+  String _inputCurrency = 'USD';
+  String _accountCurrency = 'USD';
+  double? _convertedAmount;
+  double? _exchangeRate;
+  bool _isFetchingRate = false;
+  String? _conversionError;
+  Timer? _debounceTimer;
+  final ExchangeRateService _exchangeService = ExchangeRateService();
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
     _tabController.index = _isExpense ? 0 : 1;
+    _amountController.addListener(_onAmountChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(categoryProvider.notifier).loadCategories();
@@ -56,10 +69,67 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
       } else {
         final accounts = ref.read(accountProvider).accounts;
         if (accounts.isNotEmpty) {
-          setState(() => _selectedAccountId = accounts.first.id);
+          setState(() {
+            _selectedAccountId = accounts.first.id;
+            _accountCurrency = accounts.first.currency;
+            _inputCurrency = accounts.first.currency;
+          });
         }
       }
     });
+  }
+
+  void _onAmountChanged() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _fetchConversionRate();
+    });
+  }
+
+  Future<void> _fetchConversionRate() async {
+    if (_inputCurrency == _accountCurrency) {
+      setState(() {
+        _convertedAmount = null;
+        _exchangeRate = null;
+        _conversionError = null;
+      });
+      return;
+    }
+
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      setState(() {
+        _convertedAmount = null;
+        _exchangeRate = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isFetchingRate = true;
+      _conversionError = null;
+    });
+
+    final result = await _exchangeService.convert(
+      amount: amount,
+      from: _inputCurrency,
+      to: _accountCurrency,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isFetchingRate = false;
+        if (result.isSuccess) {
+          _convertedAmount = result.convertedAmount;
+          _exchangeRate = result.rate;
+          _conversionError = null;
+        } else {
+          _conversionError = result.error;
+          _convertedAmount = null;
+          _exchangeRate = null;
+        }
+      });
+    }
   }
 
   void _onTabChanged() {
@@ -82,6 +152,18 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
     _selectedDate = DateTime.fromMillisecondsSinceEpoch(transaction.date);
     _selectedTime = TimeOfDay.fromDateTime(_selectedDate);
 
+    // Get account currency
+    final account = ref
+        .read(accountProvider)
+        .accounts
+        .where((a) => a.id == transaction.accountId)
+        .firstOrNull;
+    if (account != null) {
+      _accountCurrency = account.currency;
+      _inputCurrency =
+          account.currency; // Default to account currency when editing
+    }
+
     final category = ref
         .read(categoryProvider.notifier)
         .getCategoryById(transaction.categoryId);
@@ -94,13 +176,36 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
     }
   }
 
+  void _onAccountSelected(String accountId, String currency) {
+    setState(() {
+      _selectedAccountId = accountId;
+      _accountCurrency = currency;
+      // Reset conversion if account currency changes
+      if (_inputCurrency != currency) {
+        _fetchConversionRate();
+      } else {
+        _convertedAmount = null;
+        _exchangeRate = null;
+      }
+    });
+  }
+
+  void _onInputCurrencyChanged(String currency) {
+    setState(() {
+      _inputCurrency = currency;
+    });
+    _fetchConversionRate();
+  }
+
   @override
   void dispose() {
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _titleController.dispose();
+    _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     _notesController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -233,11 +338,14 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
     List<Category> categories,
     ThemeData theme,
   ) {
+    final currencySymbol = CurrencyFormatter.getCurrencySymbol(_inputCurrency);
+    final showConversion = _inputCurrency != _accountCurrency;
+
     return GestureDetector(
       onTap: () => _showCategoryPicker(categories),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         color: Colors.grey[200],
         child: Row(
           children: [
@@ -268,28 +376,145 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                GestureDetector(
-                  onTap: _showAmountDialog,
-                  child: Text(
-                    '\$${amount.toStringAsFixed(amount == amount.toInt() ? 0 : 2)}',
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                // Amount with currency selector
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Currency selector button
+                    GestureDetector(
+                      onTap: _showCurrencyPicker,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          // color: Colors.white.withValues(alpha: 0.8),
+                          // borderRadius: BorderRadius.circular(8),
+                          // border: Border.all(color: Colors.grey.shade400),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _inputCurrency,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              size: 18,
+                              color: Colors.grey[700],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    // Amount display
+                    GestureDetector(
+                      onTap: _showAmountDialog,
+                      child: Text(
+                        '$currencySymbol${amount.toStringAsFixed(amount == amount.toInt() ? 0 : 2)}',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  selectedCategory?.name ?? 'Select category',
-                  style: TextStyle(fontSize: 15, color: Colors.grey[700]),
-                ),
+                // Conversion preview
+                if (showConversion) _buildConversionPreview(),
+                if (!showConversion)
+                  Text(
+                    selectedCategory?.name ?? 'Select category',
+                    style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                  ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildConversionPreview() {
+    if (_isFetchingRate) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Converting...',
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          ),
+        ],
+      );
+    }
+
+    if (_conversionError != null) {
+      return GestureDetector(
+        onTap: _fetchConversionRate,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 14, color: Colors.orange[700]),
+            const SizedBox(width: 4),
+            Text(
+              'Tap to retry',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.orange[700],
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_convertedAmount != null) {
+      final accountSymbol = CurrencyFormatter.getCurrencySymbol(
+        _accountCurrency,
+      );
+      final decimals = CurrencyFormatter.getDecimalDigits(_accountCurrency);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '≈ $accountSymbol${_convertedAmount!.toStringAsFixed(decimals)} $_accountCurrency',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.green[700],
+            ),
+          ),
+          if (_exchangeRate != null)
+            Text(
+              '1 $_inputCurrency = ${_exchangeRate!.toStringAsFixed(4)} $_accountCurrency',
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            ),
+        ],
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   Widget _buildDateTimeRow(ThemeData theme) {
@@ -420,7 +645,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
         ...accounts.map((account) {
           final isSelected = _selectedAccountId == account.id;
           return GestureDetector(
-            onTap: () => setState(() => _selectedAccountId = account.id),
+            onTap: () => _onAccountSelected(account.id, account.currency),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -432,12 +657,27 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
                       : Colors.grey.shade300,
                 ),
               ),
-              child: Text(
-                account.name,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    account.name,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(${account.currency})',
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -548,20 +788,21 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
 
   void _showAmountDialog() {
     final controller = TextEditingController(text: _amountController.text);
+    final currencySymbol = CurrencyFormatter.getCurrencySymbol(_inputCurrency);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enter Amount'),
+        title: Text('Enter Amount ($_inputCurrency)'),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
           ],
-          decoration: const InputDecoration(
-            prefixText: '\$ ',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            prefixText: '$currencySymbol ',
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
@@ -578,6 +819,23 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
             child: const Text('OK'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showCurrencyPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _CurrencyPickerSheet(
+        selectedCurrency: _inputCurrency,
+        accountCurrency: _accountCurrency,
+        onCurrencySelected: (currency) {
+          _onInputCurrencyChanged(currency);
+        },
       ),
     );
   }
@@ -836,8 +1094,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
       return;
     }
 
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) {
+    final inputAmount = double.tryParse(_amountController.text);
+    if (inputAmount == null || inputAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a valid amount'),
@@ -847,11 +1105,44 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
       return;
     }
 
+    // Determine final amount (converted or original)
+    double finalAmount = inputAmount;
+    final needsConversion = _inputCurrency != _accountCurrency;
+
+    if (needsConversion) {
+      if (_convertedAmount != null) {
+        finalAmount = _convertedAmount!;
+      } else if (_conversionError != null) {
+        // Show error and ask user to retry or enter manually
+        final shouldProceed = await _showConversionErrorDialog();
+        if (!shouldProceed) return;
+        // If user chose to proceed without conversion, use input amount
+        finalAmount = inputAmount;
+      } else {
+        // Conversion not fetched yet, try to fetch now
+        setState(() => _isLoading = true);
+        final result = await _exchangeService.convert(
+          amount: inputAmount,
+          from: _inputCurrency,
+          to: _accountCurrency,
+        );
+        setState(() => _isLoading = false);
+
+        if (result.isSuccess) {
+          finalAmount = result.convertedAmount!;
+        } else {
+          final shouldProceed = await _showConversionErrorDialog();
+          if (!shouldProceed) return;
+          finalAmount = inputAmount;
+        }
+      }
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     // Check if this expense would exceed any budget
     if (_isExpense) {
-      final shouldContinue = await _checkBudgetLimit(amount);
+      final shouldContinue = await _checkBudgetLimit(finalAmount);
       if (!shouldContinue) return;
     }
 
@@ -875,7 +1166,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
           id: const Uuid().v4(),
           accountId: _selectedAccountId!,
           categoryId: _selectedCategoryId!,
-          amount: amount,
+          amount: finalAmount,
           title: title.isEmpty ? category.name : title,
           notes: notes.isEmpty ? null : notes,
           date: _selectedDate.millisecondsSinceEpoch,
@@ -891,8 +1182,12 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
           if (success) {
             Navigator.pop(context, true);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Transaction added successfully'),
+              SnackBar(
+                content: Text(
+                  needsConversion && _convertedAmount != null
+                      ? 'Transaction added (${CurrencyFormatter.format(inputAmount, currency: _inputCurrency)} → ${CurrencyFormatter.format(finalAmount, currency: _accountCurrency)})'
+                      : 'Transaction added successfully',
+                ),
                 backgroundColor: Colors.green,
               ),
             );
@@ -911,7 +1206,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
           id: widget.transaction!.id,
           accountId: _selectedAccountId!,
           categoryId: _selectedCategoryId!,
-          amount: amount,
+          amount: finalAmount,
           title: title.isEmpty ? category.name : title,
           notes: notes.isEmpty ? null : notes,
           date: _selectedDate.millisecondsSinceEpoch,
@@ -962,6 +1257,53 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen>
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<bool> _showConversionErrorDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(
+          Icons.wifi_off_rounded,
+          size: 48,
+          color: Colors.orange.shade600,
+        ),
+        title: const Text('Conversion Failed'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Unable to convert $_inputCurrency to $_accountCurrency.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please check your internet connection or proceed without conversion.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, false);
+              _fetchConversionRate();
+            },
+            child: const Text('Retry'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   IconData _getIconData(String iconName) {
@@ -1430,6 +1772,217 @@ class _AddCategorySheetState extends ConsumerState<_AddCategorySheet> {
         setState(() => _isLoading = false);
       }
     }
+  }
+}
+
+// ============================================================================
+// Currency Picker Bottom Sheet
+// ============================================================================
+
+class _CurrencyPickerSheet extends StatefulWidget {
+  final String selectedCurrency;
+  final String accountCurrency;
+  final Function(String) onCurrencySelected;
+
+  const _CurrencyPickerSheet({
+    required this.selectedCurrency,
+    required this.accountCurrency,
+    required this.onCurrencySelected,
+  });
+
+  @override
+  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
+}
+
+class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<CurrencyInfo> get _filteredCurrencies {
+    if (_searchQuery.isEmpty) {
+      return CurrencyFormatter.supportedCurrencies;
+    }
+    return CurrencyFormatter.supportedCurrencies.where((c) {
+      return c.code.toLowerCase().contains(_searchQuery) ||
+          c.name.toLowerCase().contains(_searchQuery);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) => Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Text(
+                  'Select Currency',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          // Search
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search currency...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Account currency hint
+          if (widget.selectedCurrency != widget.accountCurrency)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 18, color: Colors.blue[700]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Amount will be converted to ${widget.accountCurrency} (account currency)',
+                        style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          // Currency list
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _filteredCurrencies.length,
+              itemBuilder: (context, index) {
+                final currency = _filteredCurrencies[index];
+                final isSelected = widget.selectedCurrency == currency.code;
+                final isAccountCurrency =
+                    widget.accountCurrency == currency.code;
+
+                return ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.1)
+                          : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      currency.symbol,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                  title: Row(
+                    children: [
+                      Text(
+                        currency.code,
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      if (isAccountCurrency) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Account',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  subtitle: Text(
+                    currency.name,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  ),
+                  trailing: isSelected
+                      ? Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
+                  onTap: () {
+                    widget.onCurrencySelected(currency.code);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
