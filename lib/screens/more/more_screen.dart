@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/backup_provider.dart';
 import '../../services/database_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../settings/settings_screen.dart';
 
 class MoreScreen extends ConsumerStatefulWidget {
@@ -41,10 +42,12 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
       }
     });
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
-        title: const Text('More'),
+        title: Text(l10n.more),
         backgroundColor: const Color(0xFFF5F6FA),
         elevation: 0,
       ),
@@ -52,7 +55,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           _buildSectionTitle('General'),
-          _buildGeneralSection(),
+          _buildGeneralSection(l10n),
           const SizedBox(height: 24),
           _buildSectionTitle('Backup & Restore'),
           const SizedBox(height: 8),
@@ -84,13 +87,13 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     );
   }
 
-  Widget _buildGeneralSection() {
+  Widget _buildGeneralSection(AppLocalizations l10n) {
     return Column(
       children: [
         Card(
           child: ListTile(
             leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings & Customization'),
+            title: Text(l10n.settingsAndCustomization),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               Navigator.push(

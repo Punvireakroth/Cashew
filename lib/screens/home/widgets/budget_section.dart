@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/budget_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../budgets/budget_form_screen.dart';
 
@@ -14,6 +15,7 @@ class BudgetSection extends ConsumerWidget {
     final budgetState = ref.watch(budgetProvider);
     final settings = ref.watch(settingsProvider);
     final accentColor = settings.accentColor;
+    final l10n = AppLocalizations.of(context)!;
     final activeBudgets = budgetState.activeBudgets;
     final expiredBudgets = budgetState.expiredBudgets;
 
@@ -21,13 +23,13 @@ class BudgetSection extends ConsumerWidget {
       children: [
         // Show expired budget banner if any
         if (expiredBudgets.isNotEmpty)
-          _buildExpiredBudgetBanner(context, ref, expiredBudgets, accentColor),
+          _buildExpiredBudgetBanner(context, ref, expiredBudgets, accentColor, l10n),
 
         // Show active budget or create prompt
         if (activeBudgets.isEmpty)
-          _buildCreateBudgetPrompt(context, ref, accentColor)
+          _buildCreateBudgetPrompt(context, ref, accentColor, l10n)
         else
-          _buildActiveBudget(context, ref, activeBudgets, accentColor),
+          _buildActiveBudget(context, ref, activeBudgets, accentColor, l10n),
       ],
     );
   }
@@ -37,6 +39,7 @@ class BudgetSection extends ConsumerWidget {
     WidgetRef ref,
     List<BudgetWithSpent> expiredBudgets,
     Color accentColor,
+    AppLocalizations l10n,
   ) {
     final firstExpired = expiredBudgets.first;
 
@@ -69,8 +72,8 @@ class BudgetSection extends ConsumerWidget {
               children: [
                 Text(
                   expiredBudgets.length == 1
-                      ? '"${firstExpired.budget.name}" has expired'
-                      : '${expiredBudgets.length} budgets have expired',
+                      ? l10n.budgetExpired(firstExpired.budget.name)
+                      : l10n.budgetsExpired(expiredBudgets.length),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -79,7 +82,7 @@ class BudgetSection extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Renew or archive to keep things tidy',
+                  l10n.renewOrArchive,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.orange.shade700,
@@ -89,12 +92,12 @@ class BudgetSection extends ConsumerWidget {
             ),
           ),
           TextButton(
-            onPressed: () => _showRenewalBottomSheet(context, ref, firstExpired, accentColor),
+            onPressed: () => _showRenewalBottomSheet(context, ref, firstExpired, accentColor, l10n),
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange.shade800,
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            child: const Text('Action'),
+            child: Text(l10n.action),
           ),
         ],
       ),
@@ -106,6 +109,7 @@ class BudgetSection extends ConsumerWidget {
     WidgetRef ref,
     BudgetWithSpent budgetData,
     Color accentColor,
+    AppLocalizations l10n,
   ) {
     final now = DateTime.now();
     final originalDuration =
@@ -147,7 +151,7 @@ class BudgetSection extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          '"${budgetData.budget.name}" Expired',
+                          '"${budgetData.budget.name}" ${l10n.expired}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -168,13 +172,13 @@ class BudgetSection extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSummaryRow(
-                          'Spent',
+                          l10n.spent,
                           CurrencyFormatter.format(budgetData.spent),
                           budgetData.isOverBudget ? Colors.red : Colors.green,
                         ),
                         const SizedBox(height: 8),
                         _buildSummaryRow(
-                          'Budget',
+                          l10n.budget,
                           CurrencyFormatter.format(
                             budgetData.budget.limitAmount,
                           ),
@@ -182,7 +186,7 @@ class BudgetSection extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         _buildSummaryRow(
-                          budgetData.isOverBudget ? 'Over by' : 'Saved',
+                          budgetData.isOverBudget ? l10n.overBy : l10n.saved,
                           CurrencyFormatter.format(
                             budgetData.isOverBudget
                                 ? budgetData.spent - budgetData.budget.limitAmount
@@ -205,14 +209,14 @@ class BudgetSection extends ConsumerWidget {
                                 .archiveBudget(budgetData.budget.id);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Budget archived'),
+                                SnackBar(
+                                  content: Text(l10n.budgetArchived),
                                 ),
                               );
                             }
                           },
                           icon: const Icon(Icons.archive_outlined, size: 18),
-                          label: const Text('Archive'),
+                          label: Text(l10n.archive),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.orange.shade700,
                             side: BorderSide(color: Colors.orange.shade300),
@@ -235,14 +239,14 @@ class BudgetSection extends ConsumerWidget {
                                 );
                             if (success && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Budget renewed for new period'),
+                                SnackBar(
+                                  content: Text(l10n.budgetRenewed),
                                 ),
                               );
                             }
                           },
                           icon: const Icon(Icons.refresh, size: 18),
-                          label: const Text('Renew'),
+                          label: Text(l10n.renew),
                           style: FilledButton.styleFrom(
                             backgroundColor: accentColor,
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -254,7 +258,7 @@ class BudgetSection extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Center(
                     child: Text(
-                      'New period: ${DateFormat('MMM d').format(newStartDate)} - ${DateFormat('MMM d').format(newEndDate)}',
+                      '${l10n.newPeriod}: ${DateFormat('MMM d').format(newStartDate)} - ${DateFormat('MMM d').format(newEndDate)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -287,7 +291,7 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildCreateBudgetPrompt(BuildContext context, WidgetRef ref, Color accentColor) {
+  Widget _buildCreateBudgetPrompt(BuildContext context, WidgetRef ref, Color accentColor, AppLocalizations l10n) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -316,22 +320,22 @@ class BudgetSection extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Set up a budget',
-                    style: TextStyle(
+                    l10n.setUpBudget,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Track your spending habits',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                    l10n.trackSpendingHabits,
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ],
               ),
@@ -348,6 +352,7 @@ class BudgetSection extends ConsumerWidget {
     WidgetRef ref,
     List<BudgetWithSpent> activeBudgets,
     Color accentColor,
+    AppLocalizations l10n,
   ) {
     final budgetData = activeBudgets.first;
     final budget = budgetData.budget;
@@ -382,15 +387,15 @@ class BudgetSection extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(budget.name, budgetData, accentColor),
+            _buildHeader(budget.name, budgetData, accentColor, l10n),
             const SizedBox(height: 12),
-            _buildBalanceDisplay(budgetData),
+            _buildBalanceDisplay(budgetData, l10n),
             const SizedBox(height: 16),
-            _buildTimeline(context, startDate, endDate, timelineProgress, accentColor),
+            _buildTimeline(context, startDate, endDate, timelineProgress, accentColor, l10n),
             const SizedBox(height: 8),
             Center(
               child: Text(
-                _getBudgetStatusText(budgetData),
+                _getBudgetStatusText(budgetData, l10n),
                 style: TextStyle(
                   fontSize: 12,
                   color: budgetData.isOverBudget
@@ -403,7 +408,7 @@ class BudgetSection extends ConsumerWidget {
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  '+${activeBudgets.length - 1} more budget${activeBudgets.length > 2 ? 's' : ''}',
+                  l10n.moreBudgets(activeBudgets.length - 1),
                   style: TextStyle(
                     fontSize: 11,
                     color: accentColor,
@@ -418,10 +423,10 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String name, BudgetWithSpent budgetData, Color accentColor) {
+  Widget _buildHeader(String name, BudgetWithSpent budgetData, Color accentColor, AppLocalizations l10n) {
     final accountText = budgetData.budget.tracksAllAccounts
-        ? 'All Accounts'
-        : 'Specific Account';
+        ? l10n.allAccounts
+        : l10n.specificAccount;
     final categoryCount = budgetData.categoryIds.length;
 
     return Column(
@@ -475,7 +480,7 @@ class BudgetSection extends ConsumerWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              '$categoryCount ${categoryCount == 1 ? 'category' : 'categories'}',
+              l10n.categoryCount(categoryCount),
               style: const TextStyle(fontSize: 11, color: Colors.black54),
             ),
           ],
@@ -484,7 +489,7 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceDisplay(BudgetWithSpent budgetData) {
+  Widget _buildBalanceDisplay(BudgetWithSpent budgetData, AppLocalizations l10n) {
     return RichText(
       text: TextSpan(
         children: [
@@ -497,8 +502,7 @@ class BudgetSection extends ConsumerWidget {
             ),
           ),
           TextSpan(
-            text:
-                ' left of ${CurrencyFormatter.format(budgetData.budget.limitAmount)}',
+            text: ' ${l10n.leftOf(CurrencyFormatter.format(budgetData.budget.limitAmount))}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.normal,
@@ -516,6 +520,7 @@ class BudgetSection extends ConsumerWidget {
     DateTime endDate,
     double timelineProgress,
     Color accentColor,
+    AppLocalizations l10n,
   ) {
     return Stack(
       clipBehavior: Clip.none,
@@ -556,9 +561,9 @@ class BudgetSection extends ConsumerWidget {
                   color: accentColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
-                  'Today',
-                  style: TextStyle(
+                child: Text(
+                  l10n.today,
+                  style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -573,13 +578,13 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  String _getBudgetStatusText(BudgetWithSpent budgetData) {
+  String _getBudgetStatusText(BudgetWithSpent budgetData, AppLocalizations l10n) {
     if (budgetData.isOverBudget) {
-      return 'Over budget by ${CurrencyFormatter.format(budgetData.spent - budgetData.budget.limitAmount)}';
+      return l10n.overBudgetBy(CurrencyFormatter.format(budgetData.spent - budgetData.budget.limitAmount));
     }
     if (budgetData.daysRemaining == 0) {
-      return 'Budget period ended';
+      return l10n.budgetPeriodEnded;
     }
-    return 'You can spend ${CurrencyFormatter.format(budgetData.dailyAllowance)}/day for ${budgetData.daysRemaining} more days';
+    return l10n.dailySpendingAllowance(CurrencyFormatter.format(budgetData.dailyAllowance), budgetData.daysRemaining);
   }
 }

@@ -6,6 +6,7 @@ import '../../models/transaction.dart';
 import '../../models/category.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/transaction_item.dart';
 import '../../widgets/empty_state.dart';
 import 'transaction_form_screen.dart';
@@ -128,12 +129,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   Widget build(BuildContext context) {
     final transactionState = ref.watch(transactionProvider);
     final categoryState = ref.watch(categoryProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Transactions',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.transactions,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -162,7 +164,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search transactions...',
+                  hintText: l10n.searchTransactions,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -193,7 +195,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               onRefresh: () async {
                 _loadTransactionsForMonth();
               },
-              child: _buildBody(transactionState, categoryState),
+              child: _buildBody(transactionState, categoryState, l10n),
             ),
           ),
         ],
@@ -359,7 +361,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  Widget _buildBody(TransactionState state, CategoryState categoryState) {
+  Widget _buildBody(TransactionState state, CategoryState categoryState, AppLocalizations l10n) {
     if (state.isLoading && state.transactions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -372,7 +374,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
             const SizedBox(height: 16),
             Text(
-              'Error loading transactions',
+              l10n.errorLoadingTransactions,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -388,7 +390,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             FilledButton.icon(
               onPressed: _loadTransactionsForMonth,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(l10n.retry),
             ),
           ],
         ),
@@ -399,9 +401,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       return EmptyState(
         icon: Icons.receipt_long,
         message: state.filters.hasActiveFilters
-            ? 'No transactions found'
-            : 'No transactions for ${DateFormat('MMMM yyyy').format(_selectedMonth)}',
-        actionText: 'Add Transaction',
+            ? l10n.noTransactionsFound
+            : l10n.noTransactionsFor(DateFormat('MMMM yyyy').format(_selectedMonth)),
+        actionText: l10n.addTransaction,
         onAction: () async {
           final result = await Navigator.push(
             context,
@@ -435,7 +437,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         }
 
         final group = groupedTransactions[index];
-        return _buildDaySection(group, categoryState.categories);
+        return _buildDaySection(group, categoryState.categories, l10n);
       },
     );
   }
@@ -482,15 +484,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     return sortedGroups;
   }
 
-  Widget _buildDaySection(_DayGroup group, List<Category> categories) {
+  Widget _buildDaySection(_DayGroup group, List<Category> categories, AppLocalizations l10n) {
     final isToday = _isToday(group.date);
     final isYesterday = _isYesterday(group.date);
 
     String dateLabel;
     if (isToday) {
-      dateLabel = 'Today';
+      dateLabel = l10n.today;
     } else if (isYesterday) {
-      dateLabel = 'Yesterday';
+      dateLabel = l10n.yesterday;
     } else {
       dateLabel = DateFormat('EEEE, MMMM d').format(group.date);
     }
@@ -629,6 +631,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final categoryState = ref.watch(categoryProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -649,9 +652,9 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
               ),
               child: Row(
                 children: [
-                  const Text(
-                    'Filter Transactions',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.filterTransactions,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   TextButton(
@@ -659,7 +662,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                       widget.onReset();
                       Navigator.pop(context);
                     },
-                    child: const Text('Reset'),
+                    child: Text(l10n.reset),
                   ),
                 ],
               ),
@@ -672,30 +675,30 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   // Transaction Type Filter
-                  const Text(
-                    'Transaction Type',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.transactionType,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     children: [
                       ChoiceChip(
-                        label: const Text('All'),
+                        label: Text(l10n.all),
                         selected: _selectedType == null,
                         onSelected: (_) {
                           setState(() => _selectedType = null);
                         },
                       ),
                       ChoiceChip(
-                        label: const Text('Income'),
+                        label: Text(l10n.income),
                         selected: _selectedType == 'income',
                         onSelected: (_) {
                           setState(() => _selectedType = 'income');
                         },
                       ),
                       ChoiceChip(
-                        label: const Text('Expense'),
+                        label: Text(l10n.expense),
                         selected: _selectedType == 'expense',
                         onSelected: (_) {
                           setState(() => _selectedType = 'expense');
@@ -706,14 +709,14 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                   const SizedBox(height: 24),
 
                   // Category Filter
-                  const Text(
-                    'Categories',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.categories,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   if (categoryState.categories.isEmpty)
                     Text(
-                      'No categories available',
+                      l10n.noCategoriesAvailable,
                       style: TextStyle(color: Colors.grey[600]),
                     )
                   else
@@ -764,7 +767,7 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
-                child: const Text('Apply Filters'),
+                child: Text(l10n.applyFilters),
               ),
             ),
           ],

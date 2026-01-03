@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/budget_card.dart';
 import 'budget_form_screen.dart';
 
@@ -56,22 +57,20 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     }
   }
 
-  Future<void> _archiveBudget(BudgetWithSpent budgetData) async {
+  Future<void> _archiveBudget(BudgetWithSpent budgetData, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Archive Budget'),
-        content: Text(
-          'Archive "${budgetData.budget.name}"? You can restore it later from the Archived tab.',
-        ),
+        title: Text(l10n.archiveBudget),
+        content: Text(l10n.archiveConfirmMessage(budgetData.budget.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Archive'),
+              child: Text(l10n.archive),
             ),
         ],
       ),
@@ -84,9 +83,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${budgetData.budget.name} archived'),
+            content: Text(l10n.budgetArchivedMessage(budgetData.budget.name)),
             action: SnackBarAction(
-              label: 'Undo',
+              label: l10n.restore,
               onPressed: () {
                 ref
                     .read(budgetProvider.notifier)
@@ -99,13 +98,13 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     }
   }
 
-  Future<void> _restoreBudget(BudgetWithSpent budgetData) async {
+  Future<void> _restoreBudget(BudgetWithSpent budgetData, AppLocalizations l10n) async {
     final success = await ref
         .read(budgetProvider.notifier)
         .restoreBudget(budgetData.budget.id);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${budgetData.budget.name} restored')),
+        SnackBar(content: Text(l10n.budgetRestored(budgetData.budget.name))),
       );
     }
   }
@@ -116,15 +115,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     final settings = ref.watch(settingsProvider);
     final accentColor = settings.accentColor;
     final archivedCount = budgetState.archivedBudgets.length;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F6FA),
         elevation: 0,
-        title: const Text(
-          'Budgets',
-          style: TextStyle(
+        title: Text(
+          l10n.budgets,
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
@@ -136,12 +136,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
           unselectedLabelColor: Colors.black54,
           indicatorColor: accentColor,
           tabs: [
-            const Tab(text: 'Active'),
+            Tab(text: l10n.active),
             Tab(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Archived'),
+                  Text(l10n.archived),
                   if (archivedCount > 0) ...[
                     const SizedBox(width: 6),
                     Container(
@@ -175,16 +175,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             child: budgetState.isLoading && budgetState.budgets.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : budgetState.budgets.isEmpty
-                ? _buildEmptyState(accentColor)
-                : _buildActiveBudgetList(budgetState, accentColor),
+                ? _buildEmptyState(accentColor, l10n)
+                : _buildActiveBudgetList(budgetState, accentColor, l10n),
           ),
           // Archived Budgets Tab
           RefreshIndicator(
             onRefresh: () => ref.read(budgetProvider.notifier).loadBudgets(),
             color: accentColor,
             child: budgetState.archivedBudgets.isEmpty
-                ? _buildEmptyArchivedState()
-                : _buildArchivedBudgetList(budgetState),
+                ? _buildEmptyArchivedState(l10n)
+                : _buildArchivedBudgetList(budgetState, l10n),
           ),
         ],
       ),
@@ -196,7 +196,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildEmptyState(Color accentColor) {
+  Widget _buildEmptyState(Color accentColor, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -216,9 +216,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'No budgets yet',
-              style: TextStyle(
+            Text(
+              l10n.noBudgets,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
@@ -226,7 +226,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Create a budget to start tracking\nyour spending habits',
+              l10n.createBudgetPrompt,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
@@ -234,7 +234,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             FilledButton.icon(
               onPressed: _navigateToAddBudget,
               icon: const Icon(Icons.add),
-              label: const Text('Create Budget'),
+              label: Text(l10n.createBudget),
               style: FilledButton.styleFrom(
                 backgroundColor: accentColor,
                 padding: const EdgeInsets.symmetric(
@@ -249,7 +249,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildEmptyArchivedState() {
+  Widget _buildEmptyArchivedState(AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -269,9 +269,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'No archived budgets',
-              style: TextStyle(
+            Text(
+              l10n.noArchivedBudgets,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
@@ -279,7 +279,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Completed or expired budgets\nwill appear here after archiving',
+              l10n.archivedBudgetsHint,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
@@ -289,14 +289,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildActiveBudgetList(BudgetState budgetState, Color accentColor) {
+  Widget _buildActiveBudgetList(BudgetState budgetState, Color accentColor, AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         // Active budgets section
         if (budgetState.activeBudgets.isNotEmpty) ...[
           ...budgetState.activeBudgets.map((budgetData) {
-            return _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor);
+            return _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor, l10n: l10n);
           }),
         ],
 
@@ -307,13 +307,13 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
         if (budgetState.expiredBudgets.isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildSectionHeader(
-            'Expired Budgets',
-            subtitle: 'Renew or archive these budgets',
+            l10n.expiredBudgets,
+            subtitle: l10n.renewOrArchiveBudgets,
             icon: Icons.timer_off_outlined,
             color: Colors.orange,
           ),
           ...budgetState.expiredBudgets.map((budgetData) {
-            return _buildExpiredBudgetCard(budgetData, accentColor);
+            return _buildExpiredBudgetCard(budgetData, accentColor, l10n);
           }),
         ],
 
@@ -321,14 +321,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
         if (budgetState.futureBudgets.isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildSectionHeader(
-            'Upcoming Budgets',
+            l10n.upcomingBudgets,
             icon: Icons.schedule,
             color: accentColor,
           ),
           ...budgetState.futureBudgets.map((budgetData) {
             return Opacity(
               opacity: 0.8,
-              child: _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor),
+              child: _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor, l10n: l10n),
             );
           }),
         ],
@@ -338,12 +338,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildArchivedBudgetList(BudgetState budgetState) {
+  Widget _buildArchivedBudgetList(BudgetState budgetState, AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         ...budgetState.archivedBudgets.map((budgetData) {
-          return _buildSwipeableBudgetCard(budgetData, isArchived: true);
+          return _buildSwipeableBudgetCard(budgetData, isArchived: true, l10n: l10n);
         }),
         const SizedBox(height: 80),
       ],
@@ -391,15 +391,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     BudgetWithSpent budgetData, {
     required bool isArchived,
     Color? accentColor,
+    AppLocalizations? l10n,
   }) {
+    final localizations = l10n ?? AppLocalizations.of(context)!;
     return Dismissible(
       key: Key(budgetData.budget.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         if (isArchived) {
-          await _restoreBudget(budgetData);
+          await _restoreBudget(budgetData, localizations);
         } else {
-          await _archiveBudget(budgetData);
+          await _archiveBudget(budgetData, localizations);
         }
         return false; // Don't actually dismiss, we handle it manually
       },
@@ -420,7 +422,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             ),
             const SizedBox(width: 8),
             Text(
-              isArchived ? 'Restore' : 'Archive',
+              isArchived ? localizations.restore : localizations.archive,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -437,13 +439,13 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
           onTap: () => _navigateToEditBudget(budgetData),
           onHistoryTap: isArchived
               ? null
-              : () => _showBudgetOptions(budgetData),
+              : () => _showBudgetOptions(budgetData, localizations),
         ),
       ),
     );
   }
 
-  Widget _buildExpiredBudgetCard(BudgetWithSpent budgetData, Color accentColor) {
+  Widget _buildExpiredBudgetCard(BudgetWithSpent budgetData, Color accentColor, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -474,9 +476,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _archiveBudget(budgetData),
+                    onPressed: () => _archiveBudget(budgetData, l10n),
                     icon: const Icon(Icons.archive_outlined, size: 18),
-                    label: const Text('Archive'),
+                    label: Text(l10n.archive),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.orange.shade700,
                       side: BorderSide(color: Colors.orange.shade300),
@@ -486,9 +488,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => _showRenewalDialog(budgetData),
+                    onPressed: () => _showRenewalDialog(budgetData, l10n),
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Renew'),
+                    label: Text(l10n.renew),
                     style: FilledButton.styleFrom(
                       backgroundColor: accentColor,
                     ),
@@ -502,7 +504,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  void _showBudgetOptions(BudgetWithSpent budgetData) {
+  void _showBudgetOptions(BudgetWithSpent budgetData, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -535,7 +537,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             ),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Edit Budget'),
+              title: Text(l10n.editBudget),
               onTap: () {
                 Navigator.pop(context);
                 _navigateToEditBudget(budgetData);
@@ -543,21 +545,21 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             ),
             ListTile(
               leading: const Icon(Icons.archive_outlined),
-              title: const Text('Archive Budget'),
+              title: Text(l10n.archiveBudget),
               onTap: () {
                 Navigator.pop(context);
-                _archiveBudget(budgetData);
+                _archiveBudget(budgetData, l10n);
               },
             ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Colors.red.shade400),
               title: Text(
-                'Delete Budget',
+                l10n.deleteBudget,
                 style: TextStyle(color: Colors.red.shade400),
               ),
               onTap: () {
                 Navigator.pop(context);
-                _showDeleteConfirmation(budgetData);
+                _showDeleteConfirmation(budgetData, l10n);
               },
             ),
             const SizedBox(height: 20),
@@ -567,18 +569,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  void _showDeleteConfirmation(BudgetWithSpent budgetData) {
+  void _showDeleteConfirmation(BudgetWithSpent budgetData, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Budget'),
-        content: Text(
-          'Are you sure you want to delete "${budgetData.budget.name}"? This cannot be undone.',
-        ),
+        title: Text(l10n.deleteBudget),
+        content: Text(l10n.deleteConfirmMessage(budgetData.budget.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -588,14 +588,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                   .deleteBudget(budgetData.budget.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
     );
   }
 
-  void _showRenewalDialog(BudgetWithSpent budgetData) {
+  void _showRenewalDialog(BudgetWithSpent budgetData, AppLocalizations l10n) {
     final now = DateTime.now();
     // Calculate next period based on the original budget duration
     final originalDuration =
@@ -608,14 +608,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Renew Budget'),
+        title: Text(l10n.renewBudget),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Create a new "${budgetData.budget.name}" budget for the next period?',
-            ),
+            Text(l10n.renewBudgetPrompt(budgetData.budget.name)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -627,7 +625,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'New Period:',
+                    '${l10n.newPeriod}:',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                   Text(
@@ -636,11 +634,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Limit: \$${budgetData.budget.limitAmount.toStringAsFixed(0)}',
+                    '${l10n.limit}: \$${budgetData.budget.limitAmount.toStringAsFixed(0)}',
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    '${budgetData.categoryIds.length} categories',
+                    l10n.categoryCount(budgetData.categoryIds.length),
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
@@ -651,7 +649,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -665,11 +663,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                   );
               if (success && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Budget renewed successfully')),
+                  SnackBar(content: Text(l10n.budgetRenewedSuccess)),
                 );
               }
             },
-            child: const Text('Renew'),
+            child: Text(l10n.renew),
           ),
         ],
       ),

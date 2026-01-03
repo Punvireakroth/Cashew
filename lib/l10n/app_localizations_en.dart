@@ -78,6 +78,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirm => 'Confirm';
 
   @override
+  String get retry => 'Retry';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get action => 'Action';
+
+  @override
+  String get restore => 'Restore';
+
+  @override
+  String get archive => 'Archive';
+
+  @override
+  String get renew => 'Renew';
+
+  @override
   String get income => 'Income';
 
   @override
@@ -88,6 +106,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get total => 'Total';
+
+  @override
+  String get all => 'All';
 
   @override
   String get noTransactions => 'No transactions yet';
@@ -124,4 +145,226 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get title => 'Title';
+
+  @override
+  String get whatsUp => 'What\'s up';
+
+  @override
+  String get totalBalance => 'Total Balance';
+
+  @override
+  String get friend => 'Friend';
+
+  @override
+  String get addAccount => 'Add Account';
+
+  @override
+  String transactionsCount(int count) {
+    return '$count transactions';
+  }
+
+  @override
+  String get setUpBudget => 'Set up a budget';
+
+  @override
+  String get trackSpendingHabits => 'Track your spending habits';
+
+  @override
+  String get allAccounts => 'All Accounts';
+
+  @override
+  String get specificAccount => 'Specific Account';
+
+  @override
+  String categoryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'categories',
+      one: 'category',
+    );
+    return '$count $_temp0';
+  }
+
+  @override
+  String leftOf(String amount) {
+    return 'left of $amount';
+  }
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String budgetExpired(String name) {
+    return '\"$name\" has expired';
+  }
+
+  @override
+  String budgetsExpired(int count) {
+    return '$count budgets have expired';
+  }
+
+  @override
+  String get renewOrArchive => 'Renew or archive to keep things tidy';
+
+  @override
+  String get expired => 'Expired';
+
+  @override
+  String get spent => 'Spent';
+
+  @override
+  String get overBy => 'Over by';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get budgetArchived => 'Budget archived';
+
+  @override
+  String get budgetRenewed => 'Budget renewed for new period';
+
+  @override
+  String get newPeriod => 'New period';
+
+  @override
+  String overBudgetBy(String amount) {
+    return 'Over budget by $amount';
+  }
+
+  @override
+  String get budgetPeriodEnded => 'Budget period ended';
+
+  @override
+  String dailySpendingAllowance(String amount, int days) {
+    return 'You can spend $amount/day for $days more days';
+  }
+
+  @override
+  String moreBudgets(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'budgets',
+      one: 'budget',
+    );
+    return '+$count more $_temp0';
+  }
+
+  @override
+  String get seeAllTransactions => 'See all transactions';
+
+  @override
+  String get spendingOverview => 'Spending Overview';
+
+  @override
+  String get noSpendingData => 'No spending data yet';
+
+  @override
+  String get addExpenseToSeeTrends => 'Add expense transactions to see trends';
+
+  @override
+  String get searchTransactions => 'Search transactions...';
+
+  @override
+  String get filterTransactions => 'Filter Transactions';
+
+  @override
+  String get transactionType => 'Transaction Type';
+
+  @override
+  String get noCategoriesAvailable => 'No categories available';
+
+  @override
+  String get applyFilters => 'Apply Filters';
+
+  @override
+  String get errorLoadingTransactions => 'Error loading transactions';
+
+  @override
+  String get noTransactionsFound => 'No transactions found';
+
+  @override
+  String noTransactionsFor(String month) {
+    return 'No transactions for $month';
+  }
+
+  @override
+  String get addTransaction => 'Add Transaction';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get archived => 'Archived';
+
+  @override
+  String get createBudgetPrompt =>
+      'Create a budget to start tracking\nyour spending habits';
+
+  @override
+  String get createBudget => 'Create Budget';
+
+  @override
+  String get noArchivedBudgets => 'No archived budgets';
+
+  @override
+  String get archivedBudgetsHint =>
+      'Completed or expired budgets\nwill appear here after archiving';
+
+  @override
+  String get expiredBudgets => 'Expired Budgets';
+
+  @override
+  String get renewOrArchiveBudgets => 'Renew or archive these budgets';
+
+  @override
+  String get upcomingBudgets => 'Upcoming Budgets';
+
+  @override
+  String get archiveBudget => 'Archive Budget';
+
+  @override
+  String archiveConfirmMessage(String name) {
+    return 'Archive \"$name\"? You can restore it later from the Archived tab.';
+  }
+
+  @override
+  String budgetArchivedMessage(String name) {
+    return '$name archived';
+  }
+
+  @override
+  String budgetRestored(String name) {
+    return '$name restored';
+  }
+
+  @override
+  String get editBudget => 'Edit Budget';
+
+  @override
+  String get deleteBudget => 'Delete Budget';
+
+  @override
+  String deleteConfirmMessage(String name) {
+    return 'Are you sure you want to delete \"$name\"? This cannot be undone.';
+  }
+
+  @override
+  String get renewBudget => 'Renew Budget';
+
+  @override
+  String renewBudgetPrompt(String name) {
+    return 'Create a new \"$name\" budget for the next period?';
+  }
+
+  @override
+  String get limit => 'Limit';
+
+  @override
+  String get budgetRenewedSuccess => 'Budget renewed successfully';
 }

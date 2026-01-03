@@ -29,11 +29,18 @@
   "add": "បន្ថែម",
   "done": "រួចរាល់",
   "confirm": "បញ្ជាក់",
+  "retry": "ព្យាយាមម្ដងទៀត",
+  "reset": "កំណត់ឡើងវិញ",
+  "action": "សកម្មភាព",
+  "restore": "ស្ដារឡើងវិញ",
+  "archive": "ទុកក្នុងប័ណ្ណសារ",
+  "renew": "បន្តថ្មី",
   
   "income": "ចំណូល",
   "expense": "ចំណាយ",
   "balance": "សមតុល្យ",
   "total": "សរុប",
+  "all": "ទាំងអស់",
   
   "noTransactions": "មិនទាន់មានប្រតិបត្តិការ",
   "noBudgets": "មិនទាន់មានថវិកា",
@@ -47,6 +54,144 @@
   "amount": "ចំនួនប្រាក់",
   "date": "កាលបរិច្ឆេទ",
   "notes": "កំណត់ចំណាំ",
-  "title": "ចំណងជើង"
+  "title": "ចំណងជើង",
+  
+  "whatsUp": "សួស្តី",
+  "totalBalance": "សមតុល្យសរុប",
+  "friend": "មិត្តភ័ក្ត្រ",
+  
+  "addAccount": "បន្ថែមគណនី",
+  "transactionsCount": "{count} ប្រតិបត្តិការ",
+  "@transactionsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  
+  "setUpBudget": "បង្កើតថវិកា",
+  "trackSpendingHabits": "តាមដានទម្លាប់ការចំណាយរបស់អ្នក",
+  "allAccounts": "គណនីទាំងអស់",
+  "specificAccount": "គណនីជាក់លាក់",
+  "categoryCount": "{count} ប្រភេទ",
+  "@categoryCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "leftOf": "នៅសល់ពី {amount}",
+  "@leftOf": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "today": "ថ្ងៃនេះ",
+  "yesterday": "ម្សិលមិញ",
+  
+  "budgetExpired": "\"{name}\" បានផុតកំណត់",
+  "@budgetExpired": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "budgetsExpired": "{count} ថវិកាបានផុតកំណត់",
+  "@budgetsExpired": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "renewOrArchive": "បន្តថ្មី ឬទុកក្នុងប័ណ្ណសារ",
+  "expired": "ផុតកំណត់",
+  "spent": "បានចំណាយ",
+  "overBy": "លើសដោយ",
+  "saved": "បានសន្សំ",
+  "budgetArchived": "ថវិកាបានទុកក្នុងប័ណ្ណសារ",
+  "budgetRenewed": "ថវិកាបានបន្តថ្មីសម្រាប់រយៈពេលថ្មី",
+  "newPeriod": "រយៈពេលថ្មី",
+  "overBudgetBy": "លើសថវិកាដោយ {amount}",
+  "@overBudgetBy": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "budgetPeriodEnded": "រយៈពេលថវិកាបានបញ្ចប់",
+  "dailySpendingAllowance": "អ្នកអាចចំណាយ {amount}/ថ្ងៃ សម្រាប់ {days} ថ្ងៃទៀត",
+  "@dailySpendingAllowance": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "days": {"type": "int"}
+    }
+  },
+  "moreBudgets": "+{count} ថវិកាទៀត",
+  "@moreBudgets": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  
+  "seeAllTransactions": "មើលប្រតិបត្តិការទាំងអស់",
+  
+  "spendingOverview": "ទិដ្ឋភាពទូទៅនៃការចំណាយ",
+  "noSpendingData": "មិនទាន់មានទិន្នន័យការចំណាយ",
+  "addExpenseToSeeTrends": "បន្ថែមប្រតិបត្តិការចំណាយដើម្បីមើលនិន្នាការ",
+  
+  "searchTransactions": "ស្វែងរកប្រតិបត្តិការ...",
+  "filterTransactions": "តម្រងប្រតិបត្តិការ",
+  "transactionType": "ប្រភេទប្រតិបត្តិការ",
+  "noCategoriesAvailable": "មិនមានប្រភេទ",
+  "applyFilters": "អនុវត្តតម្រង",
+  "errorLoadingTransactions": "កំហុសក្នុងការផ្ទុកប្រតិបត្តិការ",
+  "noTransactionsFound": "រកមិនឃើញប្រតិបត្តិការ",
+  "noTransactionsFor": "គ្មានប្រតិបត្តិការសម្រាប់ {month}",
+  "@noTransactionsFor": {
+    "placeholders": {
+      "month": {"type": "String"}
+    }
+  },
+  "addTransaction": "បន្ថែមប្រតិបត្តិការ",
+  
+  "active": "សកម្ម",
+  "archived": "ប័ណ្ណសារ",
+  "createBudgetPrompt": "បង្កើតថវិកាដើម្បីចាប់ផ្តើមតាមដាន\nទម្លាប់ការចំណាយរបស់អ្នក",
+  "createBudget": "បង្កើតថវិកា",
+  "noArchivedBudgets": "គ្មានថវិកាក្នុងប័ណ្ណសារ",
+  "archivedBudgetsHint": "ថវិកាដែលបានបញ្ចប់ ឬផុតកំណត់\nនឹងបង្ហាញនៅទីនេះបន្ទាប់ពីទុកក្នុងប័ណ្ណសារ",
+  "expiredBudgets": "ថវិកាផុតកំណត់",
+  "renewOrArchiveBudgets": "បន្តថ្មី ឬទុកក្នុងប័ណ្ណសារថវិកាទាំងនេះ",
+  "upcomingBudgets": "ថវិកានាពេលខាងមុខ",
+  "archiveBudget": "ទុកថវិកាក្នុងប័ណ្ណសារ",
+  "archiveConfirmMessage": "ទុក \"{name}\" ក្នុងប័ណ្ណសារ? អ្នកអាចស្ដារវាឡើងវិញពីផ្ទាំងប័ណ្ណសារ។",
+  "@archiveConfirmMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "budgetArchivedMessage": "{name} បានទុកក្នុងប័ណ្ណសារ",
+  "@budgetArchivedMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "budgetRestored": "{name} បានស្ដារឡើងវិញ",
+  "@budgetRestored": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "editBudget": "កែសម្រួលថវិកា",
+  "deleteBudget": "លុបថវិកា",
+  "deleteConfirmMessage": "តើអ្នកប្រាកដថាចង់លុប \"{name}\"? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។",
+  "@deleteConfirmMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "renewBudget": "បន្តថវិកាថ្មី",
+  "renewBudgetPrompt": "បង្កើតថវិកា \"{name}\" ថ្មីសម្រាប់រយៈពេលបន្ទាប់?",
+  "@renewBudgetPrompt": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "limit": "កំណត់",
+  "budgetRenewedSuccess": "ថវិកាបានបន្តថ្មីដោយជោគជ័យ"
 }
-

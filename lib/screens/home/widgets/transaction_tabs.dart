@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../widgets/transaction_item.dart';
 import '../../transactions/transactions_screen.dart';
 
@@ -20,17 +21,18 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
     final transactionState = ref.watch(transactionProvider);
     final settings = ref.watch(settingsProvider);
     final accentColor = settings.accentColor;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
-        _buildTabBar(accentColor),
+        _buildTabBar(accentColor, l10n),
         const SizedBox(height: 16),
-        _buildTransactionList(transactionState, accentColor),
+        _buildTransactionList(transactionState, accentColor, l10n),
       ],
     );
   }
 
-  Widget _buildTabBar(Color accentColor) {
+  Widget _buildTabBar(Color accentColor, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -39,22 +41,22 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildTabButton('All')),
-          Expanded(child: _buildTabButton('Expense')),
-          Expanded(child: _buildTabButton('Income')),
+          Expanded(child: _buildTabButton('All', l10n.all)),
+          Expanded(child: _buildTabButton('Expense', l10n.expense)),
+          Expanded(child: _buildTabButton('Income', l10n.income)),
         ],
       ),
     );
   }
 
-  Widget _buildTabButton(String label) {
-    final isSelected = _selectedType == label;
+  Widget _buildTabButton(String type, String label) {
+    final isSelected = _selectedType == type;
     return GestureDetector(
       onTap: () {
-        setState(() => _selectedType = label);
-        final filterType = label == 'All' 
+        setState(() => _selectedType = type);
+        final filterType = type == 'All' 
             ? null 
-            : label.toLowerCase();
+            : type.toLowerCase();
         ref.read(transactionProvider.notifier).setTypeFilter(filterType);
       },
       child: Container(
@@ -76,7 +78,7 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
     );
   }
 
-  Widget _buildTransactionList(TransactionState state, Color accentColor) {
+  Widget _buildTransactionList(TransactionState state, Color accentColor, AppLocalizations l10n) {
     if (state.isLoading && state.transactions.isEmpty) {
       return Center(
         child: Padding(
@@ -89,10 +91,10 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
     if (state.transactions.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(40),
-        child: const Center(
+        child: Center(
           child: Text(
-            'No transactions yet',
-            style: TextStyle(color: Colors.black54),
+            l10n.noTransactions,
+            style: const TextStyle(color: Colors.black54),
           ),
         ),
       );
@@ -119,7 +121,7 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
               );
             },
             style: TextButton.styleFrom(foregroundColor: accentColor),
-            child: const Text('See all transactions'),
+            child: Text(l10n.seeAllTransactions),
           ),
       ],
     );

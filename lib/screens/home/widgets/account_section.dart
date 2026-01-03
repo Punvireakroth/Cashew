@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/account_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../accounts/account_form_screen.dart';
 import '../../accounts/account_details_screen.dart';
@@ -15,9 +16,10 @@ class AccountSection extends ConsumerWidget {
     final accountState = ref.watch(accountProvider);
     final settings = ref.watch(settingsProvider);
     final accentColor = settings.accentColor;
+    final l10n = AppLocalizations.of(context)!;
 
     if (accountState.accounts.isEmpty) {
-      return _buildEmptyState(context, accentColor);
+      return _buildEmptyState(context, accentColor, l10n);
     }
 
     return SizedBox(
@@ -27,15 +29,15 @@ class AccountSection extends ConsumerWidget {
         itemCount: accountState.accounts.length + 1,
         itemBuilder: (context, index) {
           if (index == accountState.accounts.length) {
-            return _buildAddAccountCard(context);
+            return _buildAddAccountCard(context, l10n);
           }
-          return _buildAccountCard(context, ref, accountState, index, accentColor);
+          return _buildAccountCard(context, ref, accountState, index, accentColor, l10n);
         },
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, Color accentColor) {
+  Widget _buildEmptyState(BuildContext context, Color accentColor, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -45,9 +47,9 @@ class AccountSection extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'No accounts yet',
-            style: TextStyle(color: Colors.black54),
+          Text(
+            l10n.noAccounts,
+            style: const TextStyle(color: Colors.black54),
           ),
           TextButton.icon(
             onPressed: () {
@@ -58,7 +60,7 @@ class AccountSection extends ConsumerWidget {
               );
             },
             icon: const Icon(Icons.add_circle_outline, size: 20),
-            label: const Text('Add Account'),
+            label: Text(l10n.addAccount),
             style: TextButton.styleFrom(
               foregroundColor: accentColor,
             ),
@@ -68,7 +70,7 @@ class AccountSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddAccountCard(BuildContext context) {
+  Widget _buildAddAccountCard(BuildContext context, AppLocalizations l10n) {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -95,7 +97,7 @@ class AccountSection extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Account',
+              l10n.account,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
@@ -113,6 +115,7 @@ class AccountSection extends ConsumerWidget {
     AccountState accountState,
     int index,
     Color accentColor,
+    AppLocalizations l10n,
   ) {
     final account = accountState.accounts[index];
     final transactionCount = _getTransactionCount(ref, account.id);
@@ -178,7 +181,7 @@ class AccountSection extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '$transactionCount transactions',
+              l10n.transactionsCount(transactionCount),
               style: const TextStyle(fontSize: 12, color: Colors.black54),
             ),
           ],

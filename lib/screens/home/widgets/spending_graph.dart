@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SpendingGraph extends ConsumerWidget {
   const SpendingGraph({super.key});
@@ -15,6 +16,7 @@ class SpendingGraph extends ConsumerWidget {
     final categoryState = ref.watch(categoryProvider);
     final settings = ref.watch(settingsProvider);
     final accentColor = settings.accentColor;
+    final l10n = AppLocalizations.of(context)!;
     
     // Build a map of categoryId -> isExpense for quick lookup
     final expenseCategoryIds = <String>{};
@@ -37,9 +39,9 @@ class SpendingGraph extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          const Text(
-            'Spending Overview',
-            style: TextStyle(
+          Text(
+            l10n.spendingOverview,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -47,7 +49,7 @@ class SpendingGraph extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           if (chartData.spots.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState(l10n)
           else
             SizedBox(
               height: 200,
@@ -58,7 +60,7 @@ class SpendingGraph extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return SizedBox(
       height: 200,
       child: Center(
@@ -72,7 +74,7 @@ class SpendingGraph extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No spending data yet',
+              l10n.noSpendingData,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade500,
@@ -80,7 +82,7 @@ class SpendingGraph extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Add expense transactions to see trends',
+              l10n.addExpenseToSeeTrends,
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade400,

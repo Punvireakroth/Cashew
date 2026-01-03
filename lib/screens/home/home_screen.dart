@@ -4,6 +4,7 @@ import '../../providers/account_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/budget_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../transactions/transactions_screen.dart';
 import 'widgets/welcome_section.dart';
 import 'widgets/account_section.dart';
@@ -32,6 +33,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: CustomScrollView(
@@ -41,9 +44,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             elevation: 0,
             floating: true,
             snap: true,
-            title: const Text(
-              'What\'s up',
-              style: TextStyle(
+            title: Text(
+              l10n.whatsUp,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,

@@ -29,11 +29,18 @@
   "add": "Add",
   "done": "Done",
   "confirm": "Confirm",
+  "retry": "Retry",
+  "reset": "Reset",
+  "action": "Action",
+  "restore": "Restore",
+  "archive": "Archive",
+  "renew": "Renew",
   
   "income": "Income",
   "expense": "Expense",
   "balance": "Balance",
   "total": "Total",
+  "all": "All",
   
   "noTransactions": "No transactions yet",
   "noBudgets": "No budgets yet",
@@ -47,6 +54,144 @@
   "amount": "Amount",
   "date": "Date",
   "notes": "Notes",
-  "title": "Title"
+  "title": "Title",
+  
+  "whatsUp": "What's up",
+  "totalBalance": "Total Balance",
+  "friend": "Friend",
+  
+  "addAccount": "Add Account",
+  "transactionsCount": "{count} transactions",
+  "@transactionsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  
+  "setUpBudget": "Set up a budget",
+  "trackSpendingHabits": "Track your spending habits",
+  "allAccounts": "All Accounts",
+  "specificAccount": "Specific Account",
+  "categoryCount": "{count} {count, plural, =1{category} other{categories}}",
+  "@categoryCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "leftOf": "left of {amount}",
+  "@leftOf": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "today": "Today",
+  "yesterday": "Yesterday",
+  
+  "budgetExpired": "\"{name}\" has expired",
+  "@budgetExpired": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "budgetsExpired": "{count} budgets have expired",
+  "@budgetsExpired": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "renewOrArchive": "Renew or archive to keep things tidy",
+  "expired": "Expired",
+  "spent": "Spent",
+  "overBy": "Over by",
+  "saved": "Saved",
+  "budgetArchived": "Budget archived",
+  "budgetRenewed": "Budget renewed for new period",
+  "newPeriod": "New period",
+  "overBudgetBy": "Over budget by {amount}",
+  "@overBudgetBy": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "budgetPeriodEnded": "Budget period ended",
+  "dailySpendingAllowance": "You can spend {amount}/day for {days} more days",
+  "@dailySpendingAllowance": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "days": {"type": "int"}
+    }
+  },
+  "moreBudgets": "+{count} more {count, plural, =1{budget} other{budgets}}",
+  "@moreBudgets": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  
+  "seeAllTransactions": "See all transactions",
+  
+  "spendingOverview": "Spending Overview",
+  "noSpendingData": "No spending data yet",
+  "addExpenseToSeeTrends": "Add expense transactions to see trends",
+  
+  "searchTransactions": "Search transactions...",
+  "filterTransactions": "Filter Transactions",
+  "transactionType": "Transaction Type",
+  "noCategoriesAvailable": "No categories available",
+  "applyFilters": "Apply Filters",
+  "errorLoadingTransactions": "Error loading transactions",
+  "noTransactionsFound": "No transactions found",
+  "noTransactionsFor": "No transactions for {month}",
+  "@noTransactionsFor": {
+    "placeholders": {
+      "month": {"type": "String"}
+    }
+  },
+  "addTransaction": "Add Transaction",
+  
+  "active": "Active",
+  "archived": "Archived",
+  "createBudgetPrompt": "Create a budget to start tracking\nyour spending habits",
+  "createBudget": "Create Budget",
+  "noArchivedBudgets": "No archived budgets",
+  "archivedBudgetsHint": "Completed or expired budgets\nwill appear here after archiving",
+  "expiredBudgets": "Expired Budgets",
+  "renewOrArchiveBudgets": "Renew or archive these budgets",
+  "upcomingBudgets": "Upcoming Budgets",
+  "archiveBudget": "Archive Budget",
+  "archiveConfirmMessage": "Archive \"{name}\"? You can restore it later from the Archived tab.",
+  "@archiveConfirmMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "budgetArchivedMessage": "{name} archived",
+  "@budgetArchivedMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "budgetRestored": "{name} restored",
+  "@budgetRestored": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "editBudget": "Edit Budget",
+  "deleteBudget": "Delete Budget",
+  "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This cannot be undone.",
+  "@deleteConfirmMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "renewBudget": "Renew Budget",
+  "renewBudgetPrompt": "Create a new \"{name}\" budget for the next period?",
+  "@renewBudgetPrompt": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "limit": "Limit",
+  "budgetRenewedSuccess": "Budget renewed successfully"
 }
-

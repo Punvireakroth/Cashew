@@ -168,6 +168,7 @@ class _MainNavigationContentState extends State<_MainNavigationContent> {
   @override
   Widget build(BuildContext context) {
     final accentColor = Theme.of(context).colorScheme.primary;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: _screens[_currentIndex],
@@ -191,26 +192,26 @@ class _MainNavigationContentState extends State<_MainNavigationContent> {
           selectedFontSize: 12,
           unselectedFontSize: 12,
           elevation: 0,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: l10n.home,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_outlined),
-              activeIcon: Icon(Icons.receipt_long),
-              label: 'Transactions',
+              icon: const Icon(Icons.receipt_long_outlined),
+              activeIcon: const Icon(Icons.receipt_long),
+              label: l10n.transactions,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_outline),
-              activeIcon: Icon(Icons.pie_chart),
-              label: 'Budgets',
+              icon: const Icon(Icons.pie_chart_outline),
+              activeIcon: const Icon(Icons.pie_chart),
+              label: l10n.budgets,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.more_horiz),
-              activeIcon: Icon(Icons.menu),
-              label: 'More',
+              icon: const Icon(Icons.more_horiz),
+              activeIcon: const Icon(Icons.menu),
+              label: l10n.more,
             ),
           ],
         ),

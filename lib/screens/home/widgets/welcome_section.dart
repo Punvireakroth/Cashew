@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/account_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/currency_formatter.dart';
 
 class WelcomeSection extends ConsumerWidget {
@@ -10,6 +11,7 @@ class WelcomeSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accountState = ref.watch(accountProvider);
+    final l10n = AppLocalizations.of(context)!;
     final totalBalance = accountState.accounts.fold<double>(
       0.0,
       (sum, acc) => sum + acc.balance,
@@ -17,10 +19,10 @@ class WelcomeSection extends ConsumerWidget {
 
     return FutureBuilder<String>(
       future: SharedPreferences.getInstance().then(
-        (prefs) => prefs.getString('user_display_name') ?? 'Friend',
+        (prefs) => prefs.getString('user_display_name') ?? l10n.friend,
       ),
       builder: (context, snapshot) {
-        final userName = snapshot.data ?? 'Friend';
+        final userName = snapshot.data ?? l10n.friend;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -33,7 +35,7 @@ class WelcomeSection extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Total Balance: ${CurrencyFormatter.format(totalBalance)}',
+              '${l10n.totalBalance}: ${CurrencyFormatter.format(totalBalance)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.black54,
               ),
