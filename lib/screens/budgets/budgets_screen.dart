@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/budget_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/budget_card.dart';
 import 'budget_form_screen.dart';
 
@@ -68,13 +69,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6B7FD7),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Archive'),
             ),
-            child: const Text('Archive'),
-          ),
         ],
       ),
     );
@@ -115,6 +113,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
   @override
   Widget build(BuildContext context) {
     final budgetState = ref.watch(budgetProvider);
+    final settings = ref.watch(settingsProvider);
+    final accentColor = settings.accentColor;
     final archivedCount = budgetState.archivedBudgets.length;
 
     return Scaffold(
@@ -132,9 +132,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF6B7FD7),
+          labelColor: accentColor,
           unselectedLabelColor: Colors.black54,
-          indicatorColor: const Color(0xFF6B7FD7),
+          indicatorColor: accentColor,
           tabs: [
             const Tab(text: 'Active'),
             Tab(
@@ -150,7 +150,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6B7FD7).withOpacity(0.2),
+                        color: accentColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -171,17 +171,17 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
           // Active Budgets Tab
           RefreshIndicator(
             onRefresh: () => ref.read(budgetProvider.notifier).loadBudgets(),
-            color: const Color(0xFF6B7FD7),
+            color: accentColor,
             child: budgetState.isLoading && budgetState.budgets.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : budgetState.budgets.isEmpty
-                ? _buildEmptyState()
-                : _buildActiveBudgetList(budgetState),
+                ? _buildEmptyState(accentColor)
+                : _buildActiveBudgetList(budgetState, accentColor),
           ),
           // Archived Budgets Tab
           RefreshIndicator(
             onRefresh: () => ref.read(budgetProvider.notifier).loadBudgets(),
-            color: const Color(0xFF6B7FD7),
+            color: accentColor,
             child: budgetState.archivedBudgets.isEmpty
                 ? _buildEmptyArchivedState()
                 : _buildArchivedBudgetList(budgetState),
@@ -190,13 +190,13 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddBudget,
-        backgroundColor: const Color(0xFF6B7FD7),
+        backgroundColor: accentColor,
         child: const Icon(Icons.add, size: 28),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(Color accentColor) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -206,7 +206,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8EBFA).withOpacity(0.5),
+                color: accentColor.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -236,7 +236,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
               icon: const Icon(Icons.add),
               label: const Text('Create Budget'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF6B7FD7),
+                backgroundColor: accentColor,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -289,14 +289,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildActiveBudgetList(BudgetState budgetState) {
+  Widget _buildActiveBudgetList(BudgetState budgetState, Color accentColor) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         // Active budgets section
         if (budgetState.activeBudgets.isNotEmpty) ...[
           ...budgetState.activeBudgets.map((budgetData) {
-            return _buildSwipeableBudgetCard(budgetData, isArchived: false);
+            return _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor);
           }),
         ],
 
@@ -313,7 +313,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             color: Colors.orange,
           ),
           ...budgetState.expiredBudgets.map((budgetData) {
-            return _buildExpiredBudgetCard(budgetData);
+            return _buildExpiredBudgetCard(budgetData, accentColor);
           }),
         ],
 
@@ -323,12 +323,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
           _buildSectionHeader(
             'Upcoming Budgets',
             icon: Icons.schedule,
-            color: const Color(0xFF6B7FD7),
+            color: accentColor,
           ),
           ...budgetState.futureBudgets.map((budgetData) {
             return Opacity(
               opacity: 0.8,
-              child: _buildSwipeableBudgetCard(budgetData, isArchived: false),
+              child: _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor),
             );
           }),
         ],
@@ -390,6 +390,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
   Widget _buildSwipeableBudgetCard(
     BudgetWithSpent budgetData, {
     required bool isArchived,
+    Color? accentColor,
   }) {
     return Dismissible(
       key: Key(budgetData.budget.id),
@@ -432,6 +433,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
         opacity: isArchived ? 0.7 : 1.0,
         child: BudgetCard(
           budgetData: budgetData,
+          accentColor: accentColor,
           onTap: () => _navigateToEditBudget(budgetData),
           onHistoryTap: isArchived
               ? null
@@ -441,7 +443,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildExpiredBudgetCard(BudgetWithSpent budgetData) {
+  Widget _buildExpiredBudgetCard(BudgetWithSpent budgetData, Color accentColor) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -454,6 +456,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             opacity: 0.8,
             child: BudgetCard(
               budgetData: budgetData,
+              accentColor: accentColor,
               onTap: () => _navigateToEditBudget(budgetData),
             ),
           ),
@@ -487,7 +490,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Renew'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF6B7FD7),
+                      backgroundColor: accentColor,
                     ),
                   ),
                 ),
@@ -666,9 +669,6 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                 );
               }
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6B7FD7),
-            ),
             child: const Text('Renew'),
           ),
         ],

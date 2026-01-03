@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/budget_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../budgets/budget_form_screen.dart';
 
@@ -11,6 +12,8 @@ class BudgetSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final budgetState = ref.watch(budgetProvider);
+    final settings = ref.watch(settingsProvider);
+    final accentColor = settings.accentColor;
     final activeBudgets = budgetState.activeBudgets;
     final expiredBudgets = budgetState.expiredBudgets;
 
@@ -18,13 +21,13 @@ class BudgetSection extends ConsumerWidget {
       children: [
         // Show expired budget banner if any
         if (expiredBudgets.isNotEmpty)
-          _buildExpiredBudgetBanner(context, ref, expiredBudgets),
+          _buildExpiredBudgetBanner(context, ref, expiredBudgets, accentColor),
 
         // Show active budget or create prompt
         if (activeBudgets.isEmpty)
-          _buildCreateBudgetPrompt(context, ref)
+          _buildCreateBudgetPrompt(context, ref, accentColor)
         else
-          _buildActiveBudget(context, ref, activeBudgets),
+          _buildActiveBudget(context, ref, activeBudgets, accentColor),
       ],
     );
   }
@@ -33,6 +36,7 @@ class BudgetSection extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<BudgetWithSpent> expiredBudgets,
+    Color accentColor,
   ) {
     final firstExpired = expiredBudgets.first;
 
@@ -85,7 +89,7 @@ class BudgetSection extends ConsumerWidget {
             ),
           ),
           TextButton(
-            onPressed: () => _showRenewalBottomSheet(context, ref, firstExpired),
+            onPressed: () => _showRenewalBottomSheet(context, ref, firstExpired, accentColor),
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange.shade800,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -101,6 +105,7 @@ class BudgetSection extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     BudgetWithSpent budgetData,
+    Color accentColor,
   ) {
     final now = DateTime.now();
     final originalDuration =
@@ -239,7 +244,7 @@ class BudgetSection extends ConsumerWidget {
                           icon: const Icon(Icons.refresh, size: 18),
                           label: const Text('Renew'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF6B7FD7),
+                            backgroundColor: accentColor,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
@@ -282,7 +287,7 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildCreateBudgetPrompt(BuildContext context, WidgetRef ref) {
+  Widget _buildCreateBudgetPrompt(BuildContext context, WidgetRef ref, Color accentColor) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -293,21 +298,21 @@ class BudgetSection extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFE8EBFA),
+          color: accentColor.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE8EBFA)),
+          border: Border.all(color: accentColor.withOpacity(0.15)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF6B7FD7).withOpacity(0.1),
+                color: accentColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.pie_chart_outline,
-                color: Color(0xFF6B7FD7),
+                color: accentColor,
               ),
             ),
             const SizedBox(width: 16),
@@ -331,7 +336,7 @@ class BudgetSection extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(Icons.add_circle_outline, color: Color(0xFF6B7FD7)),
+            Icon(Icons.add_circle_outline, color: accentColor),
           ],
         ),
       ),
@@ -342,6 +347,7 @@ class BudgetSection extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<BudgetWithSpent> activeBudgets,
+    Color accentColor,
   ) {
     final budgetData = activeBudgets.first;
     final budget = budgetData.budget;
@@ -370,24 +376,17 @@ class BudgetSection extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFFE8EBFA),
-              const Color(0xFFE8EBFA).withOpacity(0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: accentColor.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(budget.name, budgetData),
+            _buildHeader(budget.name, budgetData, accentColor),
             const SizedBox(height: 12),
             _buildBalanceDisplay(budgetData),
             const SizedBox(height: 16),
-            _buildTimeline(context, startDate, endDate, timelineProgress),
+            _buildTimeline(context, startDate, endDate, timelineProgress, accentColor),
             const SizedBox(height: 8),
             Center(
               child: Text(
@@ -405,9 +404,9 @@ class BudgetSection extends ConsumerWidget {
               Center(
                 child: Text(
                   '+${activeBudgets.length - 1} more budget${activeBudgets.length > 2 ? 's' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF6B7FD7),
+                    color: accentColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -419,7 +418,7 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String name, BudgetWithSpent budgetData) {
+  Widget _buildHeader(String name, BudgetWithSpent budgetData, Color accentColor) {
     final accountText = budgetData.budget.tracksAllAccounts
         ? 'All Accounts'
         : 'Specific Account';
@@ -442,13 +441,13 @@ class BudgetSection extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF6B7FD7).withOpacity(0.2),
+                color: accentColor.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.history,
                 size: 20,
-                color: Color(0xFF6B7FD7),
+                color: accentColor,
               ),
             ),
           ],
@@ -461,7 +460,7 @@ class BudgetSection extends ConsumerWidget {
                   ? Icons.account_balance_wallet
                   : Icons.account_balance,
               size: 12,
-              color: const Color(0xFF6B7FD7),
+              color: accentColor,
             ),
             const SizedBox(width: 4),
             Text(
@@ -469,10 +468,10 @@ class BudgetSection extends ConsumerWidget {
               style: const TextStyle(fontSize: 11, color: Colors.black54),
             ),
             const SizedBox(width: 12),
-            const Icon(
+            Icon(
               Icons.category_outlined,
               size: 12,
-              color: Color(0xFF6B7FD7),
+              color: accentColor,
             ),
             const SizedBox(width: 4),
             Text(
@@ -516,6 +515,7 @@ class BudgetSection extends ConsumerWidget {
     DateTime startDate,
     DateTime endDate,
     double timelineProgress,
+    Color accentColor,
   ) {
     return Stack(
       clipBehavior: Clip.none,
@@ -553,7 +553,7 @@ class BudgetSection extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6B7FD7),
+                  color: accentColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
@@ -565,7 +565,7 @@ class BudgetSection extends ConsumerWidget {
                   ),
                 ),
               ),
-              Container(width: 2, height: 20, color: const Color(0xFF6B7FD7)),
+              Container(width: 2, height: 20, color: accentColor),
             ],
           ),
         ),

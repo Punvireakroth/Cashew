@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../widgets/transaction_item.dart';
 import '../../transactions/transactions_screen.dart';
 
@@ -17,21 +18,23 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
   @override
   Widget build(BuildContext context) {
     final transactionState = ref.watch(transactionProvider);
+    final settings = ref.watch(settingsProvider);
+    final accentColor = settings.accentColor;
 
     return Column(
       children: [
-        _buildTabBar(),
+        _buildTabBar(accentColor),
         const SizedBox(height: 16),
-        _buildTransactionList(transactionState),
+        _buildTransactionList(transactionState, accentColor),
       ],
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EBFA),
+        color: accentColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -73,12 +76,12 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
     );
   }
 
-  Widget _buildTransactionList(TransactionState state) {
+  Widget _buildTransactionList(TransactionState state, Color accentColor) {
     if (state.isLoading && state.transactions.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(40),
-          child: CircularProgressIndicator(),
+          padding: const EdgeInsets.all(40),
+          child: CircularProgressIndicator(color: accentColor),
         ),
       );
     }
@@ -115,6 +118,7 @@ class _TransactionTabsState extends ConsumerState<TransactionTabs> {
                 ),
               );
             },
+            style: TextButton.styleFrom(foregroundColor: accentColor),
             child: const Text('See all transactions'),
           ),
       ],

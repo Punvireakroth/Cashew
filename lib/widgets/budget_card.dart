@@ -9,6 +9,7 @@ class BudgetCard extends StatelessWidget {
   final int categoryCount;
   final VoidCallback? onTap;
   final VoidCallback? onHistoryTap;
+  final Color? accentColor;
 
   const BudgetCard({
     super.key,
@@ -17,11 +18,14 @@ class BudgetCard extends StatelessWidget {
     this.categoryCount = 0,
     this.onTap,
     this.onHistoryTap,
+    this.accentColor,
   });
 
-  // Purple/Indigo colors matching the app theme
-  static const Color _cardColor = Color(0xFFE8EBFA);
-  static const Color _darkAccent = Color(0xFF6B7FD7);
+  // Default accent color (used as fallback)
+  static const Color _defaultAccent = Color(0xFF6B7FD7);
+  
+  Color get _darkAccent => accentColor ?? _defaultAccent;
+  Color get _cardColor => _darkAccent.withOpacity(0.15);
 
   @override
   Widget build(BuildContext context) {
@@ -54,15 +58,11 @@ class BudgetCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Header section with gradient background
+            // Header section with solid background
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [_cardColor, _cardColor.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: _cardColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),

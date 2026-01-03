@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/backup_provider.dart';
 import '../../services/database_service.dart';
+import '../settings/settings_screen.dart';
 
 class MoreScreen extends ConsumerStatefulWidget {
   const MoreScreen({super.key});
@@ -88,19 +89,15 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
       children: [
         Card(
           child: ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Profile'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {},
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: ListTile(
             leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings'),
+            title: const Text('Settings & Customization'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
           ),
         ),
       ],
@@ -231,10 +228,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
       if (!mounted) return;
 
       // Navigate to onboarding
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        '/',
-        (route) => false,
-      );
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

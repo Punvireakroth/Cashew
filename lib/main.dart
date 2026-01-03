@@ -8,6 +8,8 @@ import 'screens/home/home_screen.dart';
 import 'screens/more/more_screen.dart';
 import 'screens/transactions/transactions_screen.dart';
 import 'screens/budgets/budgets_screen.dart';
+import 'providers/settings_provider.dart';
+import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,19 +38,25 @@ void main() async {
   runApp(ProviderScope(child: CashChewApp(showOnboarding: showOnboarding)));
 }
 
-class CashChewApp extends StatelessWidget {
+class CashChewApp extends ConsumerWidget {
   final bool showOnboarding;
 
   const CashChewApp({super.key, required this.showOnboarding});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final accentColor = settings.accentColor;
+
     return MaterialApp(
       title: 'CashChew',
       debugShowCheckedModeBanner: false,
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
+      theme: _buildLightTheme(accentColor),
+      darkTheme: _buildDarkTheme(accentColor),
       themeMode: ThemeMode.system,
+      locale: settings.locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: showOnboarding ? const OnboardingScreen() : const MainNavigation(),
       routes: {
         '/home': (context) => const MainNavigation(),
@@ -57,25 +65,29 @@ class CashChewApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildLightTheme() {
+  ThemeData _buildLightTheme(Color accentColor) {
+    final secondaryColor = HSLColor.fromColor(
+      accentColor,
+    ).withSaturation(0.3).withLightness(0.92).toColor();
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6B7FD7),
+        seedColor: accentColor,
         brightness: Brightness.light,
-        primary: const Color(0xFF6B7FD7),
-        secondary: const Color(0xFFE8EBFA),
+        primary: accentColor,
+        secondary: secondaryColor,
         surface: const Color(0xFFF5F6FA),
       ),
       scaffoldBackgroundColor: const Color(0xFFF5F6FA),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        color: const Color(0xFFE8EBFA),
+        color: secondaryColor,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFE8EBFA),
+        fillColor: secondaryColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -86,7 +98,7 @@ class CashChewApp extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF6B7FD7), width: 2),
+          borderSide: BorderSide(color: accentColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -95,7 +107,7 @@ class CashChewApp extends StatelessWidget {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF6B7FD7),
+          backgroundColor: accentColor,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -103,21 +115,23 @@ class CashChewApp extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: Color(0xFF5A6B9E),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: HSLColor.fromColor(
+          accentColor,
+        ).withLightness(0.4).toColor(),
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
     );
   }
 
-  ThemeData _buildDarkTheme() {
+  ThemeData _buildDarkTheme(Color accentColor) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6B7FD7),
+        seedColor: accentColor,
         brightness: Brightness.dark,
       ),
     );
@@ -125,14 +139,23 @@ class CashChewApp extends StatelessWidget {
 }
 
 /// Main Navigation with Bottom Navigation Bar
-class MainNavigation extends StatefulWidget {
+class MainNavigation extends ConsumerWidget {
   const MainNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const _MainNavigationContent();
+  }
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _MainNavigationContent extends StatefulWidget {
+  const _MainNavigationContent();
+
+  @override
+  State<_MainNavigationContent> createState() => _MainNavigationContentState();
+}
+
+class _MainNavigationContentState extends State<_MainNavigationContent> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
@@ -144,6 +167,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
@@ -161,7 +186,7 @@ class _MainNavigationState extends State<MainNavigation> {
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF6B7FD7),
+          selectedItemColor: accentColor,
           unselectedItemColor: Colors.grey,
           selectedFontSize: 12,
           unselectedFontSize: 12,

@@ -1,0 +1,52 @@
+{
+  "@@locale": "en",
+  
+  "appTitle": "CashChew",
+  
+  "settings": "Settings",
+  "settingsAndCustomization": "Settings & Customization",
+  
+  "theme": "Theme",
+  "accentColor": "Accent Color",
+  "accentColorDescription": "Select a color theme for the interface",
+  "selectAccentColor": "Select Accent Color",
+  
+  "preferences": "Preferences",
+  "language": "Language",
+  "languageDescription": "Choose your preferred language",
+  "selectLanguage": "Select Language",
+  "systemLanguage": "System",
+  
+  "home": "Home",
+  "transactions": "Transactions",
+  "budgets": "Budgets",
+  "more": "More",
+  
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "add": "Add",
+  "done": "Done",
+  "confirm": "Confirm",
+  
+  "income": "Income",
+  "expense": "Expense",
+  "balance": "Balance",
+  "total": "Total",
+  
+  "noTransactions": "No transactions yet",
+  "noBudgets": "No budgets yet",
+  "noAccounts": "No accounts yet",
+  
+  "account": "Account",
+  "accounts": "Accounts",
+  "category": "Category",
+  "categories": "Categories",
+  "budget": "Budget",
+  "amount": "Amount",
+  "date": "Date",
+  "notes": "Notes",
+  "title": "Title"
+}
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/account_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../accounts/account_form_screen.dart';
@@ -12,9 +13,11 @@ class AccountSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accountState = ref.watch(accountProvider);
+    final settings = ref.watch(settingsProvider);
+    final accentColor = settings.accentColor;
 
     if (accountState.accounts.isEmpty) {
-      return _buildEmptyState(context);
+      return _buildEmptyState(context, accentColor);
     }
 
     return SizedBox(
@@ -26,17 +29,17 @@ class AccountSection extends ConsumerWidget {
           if (index == accountState.accounts.length) {
             return _buildAddAccountCard(context);
           }
-          return _buildAccountCard(context, ref, accountState, index);
+          return _buildAccountCard(context, ref, accountState, index, accentColor);
         },
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EBFA),
+        color: accentColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -57,7 +60,7 @@ class AccountSection extends ConsumerWidget {
             icon: const Icon(Icons.add_circle_outline, size: 20),
             label: const Text('Add Account'),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF6B7FD7),
+              foregroundColor: accentColor,
             ),
           ),
         ],
@@ -109,6 +112,7 @@ class AccountSection extends ConsumerWidget {
     WidgetRef ref,
     AccountState accountState,
     int index,
+    Color accentColor,
   ) {
     final account = accountState.accounts[index];
     final transactionCount = _getTransactionCount(ref, account.id);
@@ -126,7 +130,7 @@ class AccountSection extends ConsumerWidget {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: index % 2 == 0 ? const Color(0xFFE8EBFA) : Colors.white,
+          color: index % 2 == 0 ? accentColor.withOpacity(0.15) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: index % 2 != 0
               ? Border.all(color: Colors.grey.shade300)
@@ -157,7 +161,7 @@ class AccountSection extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: index % 2 == 0
                         ? Colors.grey.shade400
-                        : const Color(0xFF6B7FD7),
+                        : accentColor,
                     shape: BoxShape.circle,
                   ),
                 ),

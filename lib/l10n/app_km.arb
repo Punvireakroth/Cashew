@@ -1,0 +1,52 @@
+{
+  "@@locale": "km",
+  
+  "appTitle": "CashChew",
+  
+  "settings": "ការកំណត់",
+  "settingsAndCustomization": "ការកំណត់ និងការប្ដូរតាមបំណង",
+  
+  "theme": "រចនាប័ទ្ម",
+  "accentColor": "ពណ៌សំខាន់",
+  "accentColorDescription": "ជ្រើសរើសពណ៌សម្រាប់ចំណុចប្រទាក់",
+  "selectAccentColor": "ជ្រើសរើសពណ៌សំខាន់",
+  
+  "preferences": "ចំណូលចិត្ត",
+  "language": "ភាសា",
+  "languageDescription": "ជ្រើសរើសភាសាដែលអ្នកចូលចិត្ត",
+  "selectLanguage": "ជ្រើសរើសភាសា",
+  "systemLanguage": "ប្រព័ន្ធ",
+  
+  "home": "ទំព័រដើម",
+  "transactions": "ប្រតិបត្តិការ",
+  "budgets": "ថវិកា",
+  "more": "ច្រើនទៀត",
+  
+  "save": "រក្សាទុក",
+  "cancel": "បោះបង់",
+  "delete": "លុប",
+  "edit": "កែសម្រួល",
+  "add": "បន្ថែម",
+  "done": "រួចរាល់",
+  "confirm": "បញ្ជាក់",
+  
+  "income": "ចំណូល",
+  "expense": "ចំណាយ",
+  "balance": "សមតុល្យ",
+  "total": "សរុប",
+  
+  "noTransactions": "មិនទាន់មានប្រតិបត្តិការ",
+  "noBudgets": "មិនទាន់មានថវិកា",
+  "noAccounts": "មិនទាន់មានគណនី",
+  
+  "account": "គណនី",
+  "accounts": "គណនី​នានា",
+  "category": "ប្រភេទ",
+  "categories": "ប្រភេទ​នានា",
+  "budget": "ថវិកា",
+  "amount": "ចំនួនប្រាក់",
+  "date": "កាលបរិច្ឆេទ",
+  "notes": "កំណត់ចំណាំ",
+  "title": "ចំណងជើង"
+}
+

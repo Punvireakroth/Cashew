@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/category_provider.dart';
+import '../../../providers/settings_provider.dart';
 
 class SpendingGraph extends ConsumerWidget {
   const SpendingGraph({super.key});
@@ -12,6 +13,8 @@ class SpendingGraph extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionState = ref.watch(transactionProvider);
     final categoryState = ref.watch(categoryProvider);
+    final settings = ref.watch(settingsProvider);
+    final accentColor = settings.accentColor;
     
     // Build a map of categoryId -> isExpense for quick lookup
     final expenseCategoryIds = <String>{};
@@ -48,7 +51,7 @@ class SpendingGraph extends ConsumerWidget {
           else
             SizedBox(
               height: 200,
-              child: LineChart(_buildChartData(chartData)),
+              child: LineChart(_buildChartData(chartData, accentColor)),
             ),
         ],
       ),
@@ -148,7 +151,7 @@ class SpendingGraph extends ConsumerWidget {
     return _ChartData(spots: spots, labels: labels, maxY: maxY);
   }
 
-  LineChartData _buildChartData(_ChartData data) {
+  LineChartData _buildChartData(_ChartData data, Color accentColor) {
     return LineChartData(
       gridData: FlGridData(
         show: true,
@@ -209,7 +212,7 @@ class SpendingGraph extends ConsumerWidget {
         LineChartBarData(
           spots: data.spots,
           isCurved: true,
-          color: const Color(0xFF6B7FD7),
+          color: accentColor,
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
@@ -217,7 +220,7 @@ class SpendingGraph extends ConsumerWidget {
             getDotPainter: (spot, percent, barData, index) {
               return FlDotCirclePainter(
                 radius: 4,
-                color: const Color(0xFF6B7FD7),
+                color: accentColor,
                 strokeWidth: 2,
                 strokeColor: Colors.white,
               );
@@ -225,7 +228,7 @@ class SpendingGraph extends ConsumerWidget {
           ),
           belowBarData: BarAreaData(
             show: true,
-            color: const Color(0xFF6B7FD7).withValues(alpha: 0.1),
+            color: accentColor.withValues(alpha: 0.1),
           ),
         ),
       ],
