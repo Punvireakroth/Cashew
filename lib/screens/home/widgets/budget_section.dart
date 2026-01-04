@@ -23,7 +23,13 @@ class BudgetSection extends ConsumerWidget {
       children: [
         // Show expired budget banner if any
         if (expiredBudgets.isNotEmpty)
-          _buildExpiredBudgetBanner(context, ref, expiredBudgets, accentColor, l10n),
+          _buildExpiredBudgetBanner(
+            context,
+            ref,
+            expiredBudgets,
+            accentColor,
+            l10n,
+          ),
 
         // Show active budget or create prompt
         if (activeBudgets.isEmpty)
@@ -83,16 +89,19 @@ class BudgetSection extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   l10n.renewOrArchive,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange.shade700,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
                 ),
               ],
             ),
           ),
           TextButton(
-            onPressed: () => _showRenewalBottomSheet(context, ref, firstExpired, accentColor, l10n),
+            onPressed: () => _showRenewalBottomSheet(
+              context,
+              ref,
+              firstExpired,
+              accentColor,
+              l10n,
+            ),
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange.shade800,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -115,7 +124,9 @@ class BudgetSection extends ConsumerWidget {
     final originalDuration =
         budgetData.budget.endDate - budgetData.budget.startDate;
     final newStartDate = DateTime(now.year, now.month, 1);
-    final newEndDate = newStartDate.add(Duration(milliseconds: originalDuration));
+    final newEndDate = newStartDate.add(
+      Duration(milliseconds: originalDuration),
+    );
 
     showModalBottomSheet(
       context: context,
@@ -189,7 +200,8 @@ class BudgetSection extends ConsumerWidget {
                           budgetData.isOverBudget ? l10n.overBy : l10n.saved,
                           CurrencyFormatter.format(
                             budgetData.isOverBudget
-                                ? budgetData.spent - budgetData.budget.limitAmount
+                                ? budgetData.spent -
+                                      budgetData.budget.limitAmount
                                 : budgetData.remaining,
                           ),
                           budgetData.isOverBudget ? Colors.red : Colors.green,
@@ -209,9 +221,7 @@ class BudgetSection extends ConsumerWidget {
                                 .archiveBudget(budgetData.budget.id);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.budgetArchived),
-                                ),
+                                SnackBar(content: Text(l10n.budgetArchived)),
                               );
                             }
                           },
@@ -239,9 +249,7 @@ class BudgetSection extends ConsumerWidget {
                                 );
                             if (success && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.budgetRenewed),
-                                ),
+                                SnackBar(content: Text(l10n.budgetRenewed)),
                               );
                             }
                           },
@@ -291,7 +299,12 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildCreateBudgetPrompt(BuildContext context, WidgetRef ref, Color accentColor, AppLocalizations l10n) {
+  Widget _buildCreateBudgetPrompt(
+    BuildContext context,
+    WidgetRef ref,
+    Color accentColor,
+    AppLocalizations l10n,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -314,10 +327,7 @@ class BudgetSection extends ConsumerWidget {
                 color: accentColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.pie_chart_outline,
-                color: accentColor,
-              ),
+              child: Icon(Icons.pie_chart_outline, color: accentColor),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -354,7 +364,31 @@ class BudgetSection extends ConsumerWidget {
     Color accentColor,
     AppLocalizations l10n,
   ) {
-    final budgetData = activeBudgets.first;
+    return SizedBox(
+      height: 220,
+      child: PageView.builder(
+        itemCount: activeBudgets.length,
+        controller: PageController(viewportFraction: 1.0),
+        itemBuilder: (context, index) {
+          return _buildBudgetCard(
+            context,
+            ref,
+            activeBudgets[index],
+            accentColor,
+            l10n,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard(
+    BuildContext context,
+    WidgetRef ref,
+    BudgetWithSpent budgetData,
+    Color accentColor,
+    AppLocalizations l10n,
+  ) {
     final budget = budgetData.budget;
     final startDate = DateTime.fromMillisecondsSinceEpoch(budget.startDate);
     final endDate = DateTime.fromMillisecondsSinceEpoch(budget.endDate);
@@ -366,64 +400,66 @@ class BudgetSection extends ConsumerWidget {
         ? (daysPassed / totalDays).clamp(0.0, 1.0)
         : 0.0;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BudgetFormScreen(
-              budget: budget,
-              existingCategoryIds: budgetData.categoryIds,
-            ),
-          ),
-        ).then((_) => ref.read(budgetProvider.notifier).loadBudgets());
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(budget.name, budgetData, accentColor, l10n),
-            const SizedBox(height: 12),
-            _buildBalanceDisplay(budgetData, l10n),
-            const SizedBox(height: 16),
-            _buildTimeline(context, startDate, endDate, timelineProgress, accentColor, l10n),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                _getBudgetStatusText(budgetData, l10n),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: budgetData.isOverBudget
-                      ? Colors.red.shade700
-                      : Colors.black54,
-                ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BudgetFormScreen(
+                budget: budget,
+                existingCategoryIds: budgetData.categoryIds,
               ),
             ),
-            if (activeBudgets.length > 1) ...[
+          ).then((_) => ref.read(budgetProvider.notifier).loadBudgets());
+        },
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(budget.name, budgetData, accentColor, l10n),
+              const SizedBox(height: 12),
+              _buildBalanceDisplay(budgetData, l10n),
+              const SizedBox(height: 16),
+              _buildTimeline(
+                context,
+                startDate,
+                endDate,
+                timelineProgress,
+                accentColor,
+                l10n,
+              ),
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  l10n.moreBudgets(activeBudgets.length - 1),
+                  _getBudgetStatusText(budgetData, l10n),
                   style: TextStyle(
-                    fontSize: 11,
-                    color: accentColor,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    color: budgetData.isOverBudget
+                        ? Colors.red.shade700
+                        : Colors.black54,
                   ),
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(String name, BudgetWithSpent budgetData, Color accentColor, AppLocalizations l10n) {
+  Widget _buildHeader(
+    String name,
+    BudgetWithSpent budgetData,
+    Color accentColor,
+    AppLocalizations l10n,
+  ) {
     final accountText = budgetData.budget.tracksAllAccounts
         ? l10n.allAccounts
         : l10n.specificAccount;
@@ -449,11 +485,7 @@ class BudgetSection extends ConsumerWidget {
                 color: accentColor.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.history,
-                size: 20,
-                color: accentColor,
-              ),
+              child: Icon(Icons.history, size: 20, color: accentColor),
             ),
           ],
         ),
@@ -473,11 +505,7 @@ class BudgetSection extends ConsumerWidget {
               style: const TextStyle(fontSize: 11, color: Colors.black54),
             ),
             const SizedBox(width: 12),
-            Icon(
-              Icons.category_outlined,
-              size: 12,
-              color: accentColor,
-            ),
+            Icon(Icons.category_outlined, size: 12, color: accentColor),
             const SizedBox(width: 4),
             Text(
               l10n.categoryCount(categoryCount),
@@ -489,7 +517,10 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceDisplay(BudgetWithSpent budgetData, AppLocalizations l10n) {
+  Widget _buildBalanceDisplay(
+    BudgetWithSpent budgetData,
+    AppLocalizations l10n,
+  ) {
     return RichText(
       text: TextSpan(
         children: [
@@ -502,7 +533,8 @@ class BudgetSection extends ConsumerWidget {
             ),
           ),
           TextSpan(
-            text: ' ${l10n.leftOf(CurrencyFormatter.format(budgetData.budget.limitAmount))}',
+            text:
+                ' ${l10n.leftOf(CurrencyFormatter.format(budgetData.budget.limitAmount))}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.normal,
@@ -578,13 +610,23 @@ class BudgetSection extends ConsumerWidget {
     );
   }
 
-  String _getBudgetStatusText(BudgetWithSpent budgetData, AppLocalizations l10n) {
+  String _getBudgetStatusText(
+    BudgetWithSpent budgetData,
+    AppLocalizations l10n,
+  ) {
     if (budgetData.isOverBudget) {
-      return l10n.overBudgetBy(CurrencyFormatter.format(budgetData.spent - budgetData.budget.limitAmount));
+      return l10n.overBudgetBy(
+        CurrencyFormatter.format(
+          budgetData.spent - budgetData.budget.limitAmount,
+        ),
+      );
     }
     if (budgetData.daysRemaining == 0) {
       return l10n.budgetPeriodEnded;
     }
-    return l10n.dailySpendingAllowance(CurrencyFormatter.format(budgetData.dailyAllowance), budgetData.daysRemaining);
+    return l10n.dailySpendingAllowance(
+      CurrencyFormatter.format(budgetData.dailyAllowance),
+      budgetData.daysRemaining,
+    );
   }
 }
