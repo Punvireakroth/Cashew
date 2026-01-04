@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -65,9 +66,11 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
           const SizedBox(height: 24),
           _buildSectionTitle('Support'),
           _buildSupportSection(),
-          const SizedBox(height: 24),
-          _buildSectionTitle('Developer Tools'),
-          _buildDeveloperSection(),
+          if (kDebugMode) ...[
+            const SizedBox(height: 24),
+            _buildSectionTitle('Developer Tools'),
+            _buildDeveloperSection(),
+          ],
         ],
       ),
     );
