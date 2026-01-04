@@ -22,22 +22,50 @@ class AccountSection extends ConsumerWidget {
       return _buildEmptyState(context, accentColor, l10n);
     }
 
-    return SizedBox(
-      height: 140,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: accountState.accounts.length + 1,
-        itemBuilder: (context, index) {
-          if (index == accountState.accounts.length) {
-            return _buildAddAccountCard(context, l10n);
-          }
-          return _buildAccountCard(context, ref, accountState, index, accentColor, l10n);
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final accountCount = accountState.accounts.length;
+        const addCardWidth = 120.0;
+        const cardMargin = 12.0;
+
+        // Calculate card width: stretch to fill when only 1 account
+        final double cardWidth;
+        if (accountCount == 1) {
+          cardWidth = constraints.maxWidth - addCardWidth - cardMargin;
+        } else {
+          cardWidth = 200.0;
+        }
+
+        return SizedBox(
+          height: 140,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: accountCount + 1,
+            itemBuilder: (context, index) {
+              if (index == accountCount) {
+                return _buildAddAccountCard(context, l10n);
+              }
+              return _buildAccountCard(
+                context,
+                ref,
+                accountState,
+                index,
+                accentColor,
+                l10n,
+                cardWidth,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, Color accentColor, AppLocalizations l10n) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    Color accentColor,
+    AppLocalizations l10n,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -47,10 +75,7 @@ class AccountSection extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            l10n.noAccounts,
-            style: const TextStyle(color: Colors.black54),
-          ),
+          Text(l10n.noAccounts, style: const TextStyle(color: Colors.black54)),
           TextButton.icon(
             onPressed: () {
               Navigator.of(context).push(
@@ -61,9 +86,7 @@ class AccountSection extends ConsumerWidget {
             },
             icon: const Icon(Icons.add_circle_outline, size: 20),
             label: Text(l10n.addAccount),
-            style: TextButton.styleFrom(
-              foregroundColor: accentColor,
-            ),
+            style: TextButton.styleFrom(foregroundColor: accentColor),
           ),
         ],
       ),
@@ -74,9 +97,7 @@ class AccountSection extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const AccountFormScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AccountFormScreen()),
         );
       },
       child: Container(
@@ -98,10 +119,7 @@ class AccountSection extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               l10n.account,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -116,6 +134,7 @@ class AccountSection extends ConsumerWidget {
     int index,
     Color accentColor,
     AppLocalizations l10n,
+    double cardWidth,
   ) {
     final account = accountState.accounts[index];
     final transactionCount = _getTransactionCount(ref, account.id);
@@ -129,7 +148,7 @@ class AccountSection extends ConsumerWidget {
         );
       },
       child: Container(
-        width: 200,
+        width: cardWidth,
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -162,9 +181,7 @@ class AccountSection extends ConsumerWidget {
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: index % 2 == 0
-                        ? Colors.grey.shade400
-                        : accentColor,
+                    color: index % 2 == 0 ? Colors.grey.shade400 : accentColor,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -195,4 +212,3 @@ class AccountSection extends ConsumerWidget {
     return transactions.where((tx) => tx.accountId == accountId).length;
   }
 }
-
