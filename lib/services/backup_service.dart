@@ -286,8 +286,31 @@ class BackupService {
 
   // ==================== GOOGLE DRIVE BACKUP METHODS ====================
 
-  static const String _driveFolderName = 'appDataFolder';
+  static const String _driveFolderName = 'CashChew Backups';
   static const String _driveBackupMimeType = 'application/json';
+
+  /// Get or create the backup folder in Google Drive
+  Future<String> _getOrCreateBackupFolder(drive.DriveApi driveApi) async {
+    // Search for existing folder
+    final result = await driveApi.files.list(
+      q: "mimeType='application/vnd.google-apps.folder' and name='$_driveFolderName' and trashed=false",
+      spaces: 'drive',
+      $fields: 'files(id, name)',
+    );
+
+    // Return existing folder ID if found
+    if (result.files != null && result.files!.isNotEmpty) {
+      return result.files!.first.id!;
+    }
+
+    // Create new folder if it doesn't exist
+    final folderMetadata = drive.File()
+      ..name = _driveFolderName
+      ..mimeType = 'application/vnd.google-apps.folder';
+
+    final folder = await driveApi.files.create(folderMetadata);
+    return folder.id!;
+  }
 
   /// Upload backup to Google Drive
   Future<String?> backupToGoogleDrive() async {
@@ -301,10 +324,14 @@ class BackupService {
     final jsonString = await exportToJson();
     final fileName = _generateBackupFileName();
 
+    // Get or create the backup folder
+    final folderId = await _getOrCreateBackupFolder(driveApi);
+
     // Create file metadata
     final driveFile = drive.File()
       ..name = fileName
-      ..parents = [_driveFolderName];
+      ..mimeType = _driveBackupMimeType
+      ..parents = [folderId];
 
     // Convert string to stream
     final bytes = utf8.encode(jsonString);
@@ -330,9 +357,12 @@ class BackupService {
 
     final backups = <DriveBackupMetadata>[];
 
+    // Get the backup folder ID
+    final folderId = await _getOrCreateBackupFolder(driveApi);
+
     final result = await driveApi.files.list(
-      spaces: _driveFolderName,
-      q: "name contains 'cashchew_backup' and mimeType='$_driveBackupMimeType'",
+      q: "'$folderId' in parents and name contains 'cashchew_backup' and mimeType='$_driveBackupMimeType' and trashed=false",
+      spaces: 'drive',
       orderBy: 'modifiedTime desc',
       $fields: 'files(id, name, size, modifiedTime, createdTime)',
     );

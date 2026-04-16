@@ -193,5 +193,45 @@
     }
   },
   "limit": "កំណត់",
-  "budgetRenewedSuccess": "ថវិកាបានបន្តថ្មីដោយជោគជ័យ"
+  "budgetRenewedSuccess": "ថវិកាបានបន្តថ្មីដោយជោគជ័យ",
+
+  "budgetWizardTitle": "រៀបចំថវិកា 50/30/20",
+  "quickSetup503020": "រៀបចំរហ័ស (50/30/20)",
+  "wizardStep1Title": "រៀបចំ",
+  "wizardStep1Subtitle": "បញ្ចូលថវិកាសរុបរបស់អ្នក",
+  "wizardStep2Title": "មើលការបែងចែក",
+  "wizardStep2Subtitle": "ពិនិត្យការបែងចែក 50/30/20",
+  "wizardStep3Title": "ប្រភេទ",
+  "wizardStep3Subtitle": "កំណត់ប្រភេទសម្រាប់ថវិកានីមួយៗ",
+  "wizardStep4Title": "បញ្ជាក់",
+  "wizardStep4Subtitle": "ពិនិត្យ និងបង្កើតថវិកា",
+
+  "totalMonthlyBudget": "ថវិកាសរុបប្រចាំខែ",
+  "trackAccount": "តាមដានគណនី",
+  "budgetPeriod": "រយៈពេលថវិកា",
+  "thisMonth": "ខែនេះ",
+  "nextMonth": "ខែក្រោយ",
+  "continueText": "បន្ត",
+  "back": "ថយក្រោយ",
+  "createBudgets": "បង្កើតថវិកា",
+
+  "budgetRuleExplanation": "ច្បាប់ 50/30/20 ផ្ដល់យោបល់បែងចែក 50% សម្រាប់តម្រូវការ 30% សម្រាប់ចង់បាន និង 20% សម្រាប់សន្សំ។",
+  "needs": "តម្រូវការ",
+  "wants": "ចង់បាន",
+  "savings": "សន្សំ",
+  "needsDescription": "ការចំណាយចាំបាច់ដូចជា ផ្ទះ វិក្កយបត្រ អាហារ",
+  "wantsDescription": "ការចំណាយមិនចាំបាច់ដូចជា កំសាន្ត",
+  "savingsDescription": "ប្រាក់សម្រាប់គោលដៅនាពេលអនាគត",
+
+  "assignCategoriesHint": "អូសប្រភេទរវាងផ្នែក ឬចុចដើម្បីផ្លាស់ទី",
+  "moveTo": "ផ្លាស់ទៅ",
+  "removeFromBudget": "ដកចេញពីថវិកា",
+  "reviewBudgetsSummary": "ពិនិត្យថវិកាដែលនឹងត្រូវបង្កើត:",
+
+  "needsBudget": "ថវិកាតម្រូវការ",
+  "wantsBudget": "ថវិកាចង់បាន",
+  "savingsBudget": "ថវិកាសន្សំ",
+
+  "pleaseEnterAmount": "សូមបញ្ចូលចំនួនប្រាក់",
+  "pleaseEnterValidAmount": "សូមបញ្ចូលចំនួនប្រាក់ត្រឹមត្រូវ"
 }

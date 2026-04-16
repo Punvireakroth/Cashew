@@ -356,4 +356,107 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get budgetRenewedSuccess => 'ថវិកាបានបន្តថ្មីដោយជោគជ័យ';
+
+  @override
+  String get budgetWizardTitle => 'រៀបចំថវិកា 50/30/20';
+
+  @override
+  String get quickSetup503020 => 'រៀបចំរហ័ស (50/30/20)';
+
+  @override
+  String get wizardStep1Title => 'រៀបចំ';
+
+  @override
+  String get wizardStep1Subtitle => 'បញ្ចូលថវិកាសរុបរបស់អ្នក';
+
+  @override
+  String get wizardStep2Title => 'មើលការបែងចែក';
+
+  @override
+  String get wizardStep2Subtitle => 'ពិនិត្យការបែងចែក 50/30/20';
+
+  @override
+  String get wizardStep3Title => 'ប្រភេទ';
+
+  @override
+  String get wizardStep3Subtitle => 'កំណត់ប្រភេទសម្រាប់ថវិកានីមួយៗ';
+
+  @override
+  String get wizardStep4Title => 'បញ្ជាក់';
+
+  @override
+  String get wizardStep4Subtitle => 'ពិនិត្យ និងបង្កើតថវិកា';
+
+  @override
+  String get totalMonthlyBudget => 'ថវិកាសរុបប្រចាំខែ';
+
+  @override
+  String get trackAccount => 'តាមដានគណនី';
+
+  @override
+  String get budgetPeriod => 'រយៈពេលថវិកា';
+
+  @override
+  String get thisMonth => 'ខែនេះ';
+
+  @override
+  String get nextMonth => 'ខែក្រោយ';
+
+  @override
+  String get continueText => 'បន្ត';
+
+  @override
+  String get back => 'ថយក្រោយ';
+
+  @override
+  String get createBudgets => 'បង្កើតថវិកា';
+
+  @override
+  String get budgetRuleExplanation =>
+      'ច្បាប់ 50/30/20 ផ្ដល់យោបល់បែងចែក 50% សម្រាប់តម្រូវការ 30% សម្រាប់ចង់បាន និង 20% សម្រាប់សន្សំ។';
+
+  @override
+  String get needs => 'តម្រូវការ';
+
+  @override
+  String get wants => 'ចង់បាន';
+
+  @override
+  String get savings => 'សន្សំ';
+
+  @override
+  String get needsDescription => 'ការចំណាយចាំបាច់ដូចជា ផ្ទះ វិក្កយបត្រ អាហារ';
+
+  @override
+  String get wantsDescription => 'ការចំណាយមិនចាំបាច់ដូចជា កំសាន្ត';
+
+  @override
+  String get savingsDescription => 'ប្រាក់សម្រាប់គោលដៅនាពេលអនាគត';
+
+  @override
+  String get assignCategoriesHint => 'អូសប្រភេទរវាងផ្នែក ឬចុចដើម្បីផ្លាស់ទី';
+
+  @override
+  String get moveTo => 'ផ្លាស់ទៅ';
+
+  @override
+  String get removeFromBudget => 'ដកចេញពីថវិកា';
+
+  @override
+  String get reviewBudgetsSummary => 'ពិនិត្យថវិកាដែលនឹងត្រូវបង្កើត:';
+
+  @override
+  String get needsBudget => 'ថវិកាតម្រូវការ';
+
+  @override
+  String get wantsBudget => 'ថវិកាចង់បាន';
+
+  @override
+  String get savingsBudget => 'ថវិកាសន្សំ';
+
+  @override
+  String get pleaseEnterAmount => 'សូមបញ្ចូលចំនួនប្រាក់';
+
+  @override
+  String get pleaseEnterValidAmount => 'សូមបញ្ចូលចំនួនប្រាក់ត្រឹមត្រូវ';
 }

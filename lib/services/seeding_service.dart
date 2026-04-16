@@ -131,6 +131,14 @@ class SeedingService {
         type: 'expense',
         createdAt: now,
       ),
+      Category(
+        id: _uuid.v4(),
+        name: 'Savings Transfer',
+        iconName: 'savings',
+        color: Colors.green.shade700.value,
+        type: 'expense',
+        createdAt: now,
+      ),
     ];
 
     // Default Income Categories

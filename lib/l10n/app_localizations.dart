@@ -733,6 +733,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Budget renewed successfully'**
   String get budgetRenewedSuccess;
+
+  /// No description provided for @budgetWizardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'50/30/20 Budget Setup'**
+  String get budgetWizardTitle;
+
+  /// No description provided for @quickSetup503020.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Setup (50/30/20)'**
+  String get quickSetup503020;
+
+  /// No description provided for @wizardStep1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup'**
+  String get wizardStep1Title;
+
+  /// No description provided for @wizardStep1Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your total budget'**
+  String get wizardStep1Subtitle;
+
+  /// No description provided for @wizardStep2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview Split'**
+  String get wizardStep2Title;
+
+  /// No description provided for @wizardStep2Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the 50/30/20 allocation'**
+  String get wizardStep2Subtitle;
+
+  /// No description provided for @wizardStep3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get wizardStep3Title;
+
+  /// No description provided for @wizardStep3Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign categories to each budget'**
+  String get wizardStep3Subtitle;
+
+  /// No description provided for @wizardStep4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get wizardStep4Title;
+
+  /// No description provided for @wizardStep4Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and create budgets'**
+  String get wizardStep4Subtitle;
+
+  /// No description provided for @totalMonthlyBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Monthly Budget'**
+  String get totalMonthlyBudget;
+
+  /// No description provided for @trackAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Track Account'**
+  String get trackAccount;
+
+  /// No description provided for @budgetPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Period'**
+  String get budgetPeriod;
+
+  /// No description provided for @thisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get thisMonth;
+
+  /// No description provided for @nextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Month'**
+  String get nextMonth;
+
+  /// No description provided for @continueText.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueText;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @createBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Budgets'**
+  String get createBudgets;
+
+  /// No description provided for @budgetRuleExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The 50/30/20 rule suggests allocating 50% for needs, 30% for wants, and 20% for savings.'**
+  String get budgetRuleExplanation;
+
+  /// No description provided for @needs.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs'**
+  String get needs;
+
+  /// No description provided for @wants.
+  ///
+  /// In en, this message translates to:
+  /// **'Wants'**
+  String get wants;
+
+  /// No description provided for @savings.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings'**
+  String get savings;
+
+  /// No description provided for @needsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Essential expenses like housing, bills, food'**
+  String get needsDescription;
+
+  /// No description provided for @wantsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-essential spending like entertainment'**
+  String get wantsDescription;
+
+  /// No description provided for @savingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Money set aside for future goals'**
+  String get savingsDescription;
+
+  /// No description provided for @assignCategoriesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag categories between sections or tap to move them'**
+  String get assignCategoriesHint;
+
+  /// No description provided for @moveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to'**
+  String get moveTo;
+
+  /// No description provided for @removeFromBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from budget'**
+  String get removeFromBudget;
+
+  /// No description provided for @reviewBudgetsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the budgets that will be created:'**
+  String get reviewBudgetsSummary;
+
+  /// No description provided for @needsBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Budget'**
+  String get needsBudget;
+
+  /// No description provided for @wantsBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Wants Budget'**
+  String get wantsBudget;
+
+  /// No description provided for @savingsBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings Budget'**
+  String get savingsBudget;
+
+  /// No description provided for @pleaseEnterAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter an amount'**
+  String get pleaseEnterAmount;
+
+  /// No description provided for @pleaseEnterValidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid amount'**
+  String get pleaseEnterValidAmount;
 }
 
 class _AppLocalizationsDelegate

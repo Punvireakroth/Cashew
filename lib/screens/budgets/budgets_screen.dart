@@ -5,6 +5,7 @@ import '../../providers/settings_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/budget_card.dart';
 import 'budget_form_screen.dart';
+import 'budget_wizard_screen.dart';
 
 class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
@@ -42,6 +43,16 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     }
   }
 
+  void _navigateToWizard() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const BudgetWizardScreen()),
+    );
+    if (result == true) {
+      ref.read(budgetProvider.notifier).loadBudgets();
+    }
+  }
+
   void _navigateToEditBudget(BudgetWithSpent budgetData) async {
     final result = await Navigator.push<bool>(
       context,
@@ -57,7 +68,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     }
   }
 
-  Future<void> _archiveBudget(BudgetWithSpent budgetData, AppLocalizations l10n) async {
+  Future<void> _archiveBudget(
+    BudgetWithSpent budgetData,
+    AppLocalizations l10n,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -68,10 +82,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             onPressed: () => Navigator.pop(context, false),
             child: Text(l10n.cancel),
           ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.archive),
-            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.archive),
+          ),
         ],
       ),
     );
@@ -98,7 +112,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     }
   }
 
-  Future<void> _restoreBudget(BudgetWithSpent budgetData, AppLocalizations l10n) async {
+  Future<void> _restoreBudget(
+    BudgetWithSpent budgetData,
+    AppLocalizations l10n,
+  ) async {
     final success = await ref
         .read(budgetProvider.notifier)
         .restoreBudget(budgetData.budget.id);
@@ -130,6 +147,13 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
             color: Colors.black87,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome, color: Color(0xFF6B7FD7)),
+            onPressed: _navigateToWizard,
+            tooltip: l10n.quickSetup503020,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: accentColor,
@@ -243,6 +267,20 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _navigateToWizard,
+              icon: const Icon(Icons.auto_awesome),
+              label: Text(l10n.quickSetup503020),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: accentColor,
+                side: BorderSide(color: accentColor),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -289,14 +327,23 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildActiveBudgetList(BudgetState budgetState, Color accentColor, AppLocalizations l10n) {
+  Widget _buildActiveBudgetList(
+    BudgetState budgetState,
+    Color accentColor,
+    AppLocalizations l10n,
+  ) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         // Active budgets section
         if (budgetState.activeBudgets.isNotEmpty) ...[
           ...budgetState.activeBudgets.map((budgetData) {
-            return _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor, l10n: l10n);
+            return _buildSwipeableBudgetCard(
+              budgetData,
+              isArchived: false,
+              accentColor: accentColor,
+              l10n: l10n,
+            );
           }),
         ],
 
@@ -328,7 +375,12 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
           ...budgetState.futureBudgets.map((budgetData) {
             return Opacity(
               opacity: 0.8,
-              child: _buildSwipeableBudgetCard(budgetData, isArchived: false, accentColor: accentColor, l10n: l10n),
+              child: _buildSwipeableBudgetCard(
+                budgetData,
+                isArchived: false,
+                accentColor: accentColor,
+                l10n: l10n,
+              ),
             );
           }),
         ],
@@ -338,12 +390,19 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildArchivedBudgetList(BudgetState budgetState, AppLocalizations l10n) {
+  Widget _buildArchivedBudgetList(
+    BudgetState budgetState,
+    AppLocalizations l10n,
+  ) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         ...budgetState.archivedBudgets.map((budgetData) {
-          return _buildSwipeableBudgetCard(budgetData, isArchived: true, l10n: l10n);
+          return _buildSwipeableBudgetCard(
+            budgetData,
+            isArchived: true,
+            l10n: l10n,
+          );
         }),
         const SizedBox(height: 80),
       ],
@@ -445,7 +504,11 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  Widget _buildExpiredBudgetCard(BudgetWithSpent budgetData, Color accentColor, AppLocalizations l10n) {
+  Widget _buildExpiredBudgetCard(
+    BudgetWithSpent budgetData,
+    Color accentColor,
+    AppLocalizations l10n,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -491,9 +554,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
                     onPressed: () => _showRenewalDialog(budgetData, l10n),
                     icon: const Icon(Icons.refresh, size: 18),
                     label: Text(l10n.renew),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accentColor,
-                    ),
+                    style: FilledButton.styleFrom(backgroundColor: accentColor),
                   ),
                 ),
               ],
@@ -569,7 +630,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen>
     );
   }
 
-  void _showDeleteConfirmation(BudgetWithSpent budgetData, AppLocalizations l10n) {
+  void _showDeleteConfirmation(
+    BudgetWithSpent budgetData,
+    AppLocalizations l10n,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -193,5 +193,45 @@
     }
   },
   "limit": "Limit",
-  "budgetRenewedSuccess": "Budget renewed successfully"
+  "budgetRenewedSuccess": "Budget renewed successfully",
+
+  "budgetWizardTitle": "50/30/20 Budget Setup",
+  "quickSetup503020": "Quick Setup (50/30/20)",
+  "wizardStep1Title": "Setup",
+  "wizardStep1Subtitle": "Enter your total budget",
+  "wizardStep2Title": "Preview Split",
+  "wizardStep2Subtitle": "Review the 50/30/20 allocation",
+  "wizardStep3Title": "Categories",
+  "wizardStep3Subtitle": "Assign categories to each budget",
+  "wizardStep4Title": "Confirm",
+  "wizardStep4Subtitle": "Review and create budgets",
+
+  "totalMonthlyBudget": "Total Monthly Budget",
+  "trackAccount": "Track Account",
+  "budgetPeriod": "Budget Period",
+  "thisMonth": "This Month",
+  "nextMonth": "Next Month",
+  "continueText": "Continue",
+  "back": "Back",
+  "createBudgets": "Create Budgets",
+
+  "budgetRuleExplanation": "The 50/30/20 rule suggests allocating 50% for needs, 30% for wants, and 20% for savings.",
+  "needs": "Needs",
+  "wants": "Wants",
+  "savings": "Savings",
+  "needsDescription": "Essential expenses like housing, bills, food",
+  "wantsDescription": "Non-essential spending like entertainment",
+  "savingsDescription": "Money set aside for future goals",
+
+  "assignCategoriesHint": "Drag categories between sections or tap to move them",
+  "moveTo": "Move to",
+  "removeFromBudget": "Remove from budget",
+  "reviewBudgetsSummary": "Review the budgets that will be created:",
+
+  "needsBudget": "Needs Budget",
+  "wantsBudget": "Wants Budget",
+  "savingsBudget": "Savings Budget",
+
+  "pleaseEnterAmount": "Please enter an amount",
+  "pleaseEnterValidAmount": "Please enter a valid amount"
 }

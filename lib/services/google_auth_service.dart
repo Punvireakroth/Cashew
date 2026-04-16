@@ -11,7 +11,7 @@ class GoogleAuthService {
 
   static const List<String> _scopes = [
     'email',
-    drive.DriveApi.driveAppdataScope, // App-specific folder in Drive
+    drive.DriveApi.driveFileScope, // Access to create/manage files
   ];
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: _scopes);

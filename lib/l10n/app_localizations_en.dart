@@ -367,4 +367,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get budgetRenewedSuccess => 'Budget renewed successfully';
+
+  @override
+  String get budgetWizardTitle => '50/30/20 Budget Setup';
+
+  @override
+  String get quickSetup503020 => 'Quick Setup (50/30/20)';
+
+  @override
+  String get wizardStep1Title => 'Setup';
+
+  @override
+  String get wizardStep1Subtitle => 'Enter your total budget';
+
+  @override
+  String get wizardStep2Title => 'Preview Split';
+
+  @override
+  String get wizardStep2Subtitle => 'Review the 50/30/20 allocation';
+
+  @override
+  String get wizardStep3Title => 'Categories';
+
+  @override
+  String get wizardStep3Subtitle => 'Assign categories to each budget';
+
+  @override
+  String get wizardStep4Title => 'Confirm';
+
+  @override
+  String get wizardStep4Subtitle => 'Review and create budgets';
+
+  @override
+  String get totalMonthlyBudget => 'Total Monthly Budget';
+
+  @override
+  String get trackAccount => 'Track Account';
+
+  @override
+  String get budgetPeriod => 'Budget Period';
+
+  @override
+  String get thisMonth => 'This Month';
+
+  @override
+  String get nextMonth => 'Next Month';
+
+  @override
+  String get continueText => 'Continue';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get createBudgets => 'Create Budgets';
+
+  @override
+  String get budgetRuleExplanation =>
+      'The 50/30/20 rule suggests allocating 50% for needs, 30% for wants, and 20% for savings.';
+
+  @override
+  String get needs => 'Needs';
+
+  @override
+  String get wants => 'Wants';
+
+  @override
+  String get savings => 'Savings';
+
+  @override
+  String get needsDescription => 'Essential expenses like housing, bills, food';
+
+  @override
+  String get wantsDescription => 'Non-essential spending like entertainment';
+
+  @override
+  String get savingsDescription => 'Money set aside for future goals';
+
+  @override
+  String get assignCategoriesHint =>
+      'Drag categories between sections or tap to move them';
+
+  @override
+  String get moveTo => 'Move to';
+
+  @override
+  String get removeFromBudget => 'Remove from budget';
+
+  @override
+  String get reviewBudgetsSummary => 'Review the budgets that will be created:';
+
+  @override
+  String get needsBudget => 'Needs Budget';
+
+  @override
+  String get wantsBudget => 'Wants Budget';
+
+  @override
+  String get savingsBudget => 'Savings Budget';
+
+  @override
+  String get pleaseEnterAmount => 'Please enter an amount';
+
+  @override
+  String get pleaseEnterValidAmount => 'Please enter a valid amount';
 }
